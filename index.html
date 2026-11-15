@@ -44,7 +44,7 @@ details summary{color:var(--mut);font-size:14px;cursor:pointer}
 <div id="tapAll">화면 아무 곳이나<br>한 번 눌러 주세요<small>휴대폰이 자동 소리 재생을 막았어요</small></div>
 <main>
   <h1>치윤 쉐도잉 · 토스 파트1</h1>
-  <div class="sub">시작을 누른 뒤에는 화면을 보지 않아도 소리로만 진행돼요.</div>
+  <div class="sub">버전 7 · 시작을 누른 뒤에는 화면을 보지 않아도 소리로만 진행돼요.</div>
 
   <div class="card">
     <div class="row">
@@ -108,8 +108,8 @@ try{
   const el=document.getElementById('asrInfo'); if(el) el.textContent='음성인식 준비 완료 (한 번 읽으면 단어+억양 동시 평가)';
 }catch(e){ window.asrState='failed'; const el=document.getElementById('asrInfo'); if(el) el.textContent='음성인식 모델을 못 받았어요. 크롬 음성인식으로 진행해요 (억양은 한 번 더 읽기)'; console.error(e); }
 </script>
-<script src="passages.js"></script>
-<script src="core.js"></script>
+<script src="passages.js?v=7"></script>
+<script src="core.js?v=7"></script>
 <script>
 const $=id=>document.getElementById(id);
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
@@ -415,7 +415,7 @@ $('micTest').onclick=async()=>{
     '<br>'+diag(r)+' · '+(ua?ua[0]:'');
 };
 renderDay();
-if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).catch(()=>{}); }
 // auto start (?auto=1 or installed app): browsers may block sound until one tap
 (async function autoStart(){
   if(!/[?&]auto=1/.test(location.search)) return;
