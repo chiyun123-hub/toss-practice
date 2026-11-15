@@ -173,7 +173,7 @@ function beep(f=880,d=0.12){
 
 // ---------- mic / pitch ----------
 async function openMic(){
-  if(stream) return true;
+  if(stream){ const t=stream.getAudioTracks()[0]; if(t && t.readyState==='live' && t.enabled && !t.muted) return true; closeMic(); }
   try{
     stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:false,autoGainControl:true}});
     const src=audioCtx.createMediaStreamSource(stream);
@@ -227,7 +227,6 @@ function captureUtterance(silenceEnd=1.2, maxSec=25, waitSec=7){
       if((started&&silent>=silenceEnd) || el>maxSec || (!started&&el>waitSec) || stopFlag){
         clearInterval(iv); const fr=stopSampling();
         try{ proc.disconnect(); src.disconnect(); }catch(e){}
-        closeMic(); // release mic so speaker/Bluetooth audio is not switched to call mode
         res({frames:fr, pcm:concat(pcm), sr:audioCtx.sampleRate, spoke:started});
       }
     },100);
@@ -352,9 +351,9 @@ async function practiceSentence(sentence,pi,si){
     }
     if(!wordsOk){ await sayParts(spoken.slice(0,8)); for(const d of diffs.filter(d=>d.exp.length).slice(0,2)) await say(d.exp.join(' '),'en',0.7); }
     if(!intoOk) await say(into.msgs[0]);
-    if(attempt<maxTry) await say('다시 들어 보세요');
+    if(attempt<maxTry) await say('다시');
     else { addLog(`<span class="pill">${pi+1}-${si+1}</span><span class="bad">넘어감: ${wordMsgs.join(', ')||into.msgs[0]||''}</span>`);
-      await say('이 문장은 저녁에 녹음으로 다시 봐요. 다음 문장으로 갈게요'); }
+      await say('다음 문장으로 갈게요'); }
   }
 }
 async function run(){
@@ -366,13 +365,13 @@ async function run(){
   if(!asrReady() && !SR){ await say('이 브라우저는 음성 인식을 지원하지 않아요. 크롬으로 열어 주세요'); return finish(); }
   if($('intoOn').checked && pitchMode==='concurrent' && !await openMic()) { await say('마이크를 허용해 주세요'); }
   const ps=todaysPassages();
-  await say(`좋아요 치윤님. 오늘 지문은 ${ps.map(p=>p.type.replace(/\s*\(.*\)/,'')).join(', 그리고 ')}이에요. 한 문장씩 불러 드릴게요. 삐 소리가 나면 따라 읽어 주세요`);
   for(let pi=0; pi<ps.length && !stopFlag; pi++){
     const ss=Core.splitSentences(ps[pi].text);
-    await say(`지문 ${pi+1}, ${ps[pi].type.replace(/\s*\(.*\)/,'')}입니다`);
+    const tname=ps[pi].type.replace(/\s*\(.*\)/,'');
+    await say(pi===0 ? `오늘은 ${tname}이에요` : `다음은 ${tname}이에요`);
     for(let si=0; si<ss.length && !stopFlag; si++) await practiceSentence(ss[si],pi,si);
     if(stopFlag) break;
-    await say('지문 하나 끝났어요. 이제 전체를 한 번 이어서 들려 드릴게요. 듣고 나서 삐 소리가 나면 처음부터 끝까지 읽어 주세요');
+    await say('이제 전체를 이어서 읽어 볼게요');
     await say(ps[pi].text,'en'); await beep();
     $('status').textContent=`지문 ${pi+1} 전체 읽기`; $('heard').textContent='듣는 중…';
     const whole=await listenLong(); if(stopFlag) break;
