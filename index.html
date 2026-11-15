@@ -98,7 +98,8 @@ details summary{color:var(--mut);font-size:14px;cursor:pointer}
 const $=id=>document.getElementById(id);
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
 let dayOffset=0, running=false, stopFlag=false, wakeLock=null;
-let audioCtx=null, stream=null, analyser=null, buf=null, sampler=null, frames=[], t0=0, pitchMode='concurrent';
+let audioCtx=null, stream=null, analyser=null, buf=null, sampler=null, frames=[], t0=0;
+let pitchMode=/Android/i.test(navigator.userAgent)?'sequential':'concurrent';
 const hardWords={}; const logLines=[];
 
 function seoulToday(){ return new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'})); }
@@ -225,6 +226,7 @@ async function listen(){
       const maxR=Math.max(0,...fr.map(f=>f.rms));
       if(r.err==='audio-capture'){ pitchMode='sequential'; closeMic(); return {...r,frames:null,retry:true}; }
       if(r.text && maxR<0.004){ pitchMode='sequential'; closeMic(); return {...r,frames:null}; }
+      if(!r.text && maxR>0.02){ pitchMode='sequential'; closeMic(); return {...r,frames:null,retry:true}; }
       return {...r,frames:fr};
     }
   }
@@ -247,7 +249,7 @@ async function practiceSentence(sentence,pi,si){
     if(/^stop\b/.test(cmd)) { stopFlag=true; return; }
     if(!r.text){
       if(r.err==='not-allowed'||r.err==='no-sr'){ await say('마이크 권한이 없어서 들을 수 없어요. 크롬에서 마이크를 허용해 주세요'); stopFlag=true; return; }
-      $('fb').innerHTML='<span class="warn">못 들었어요</span>'; noHear++;
+      $('fb').innerHTML='<span class="warn">못 들었어요 (오류 코드: '+(r.err||'없음')+')</span>'; noHear++;
       if(noHear>=2){ await say('소리가 안 들려서 다음 문장으로 갈게요'); return; }
       await say('잘 못 들었어요. 다시 해 볼게요'); attempt--; continue;
     }
@@ -269,7 +271,7 @@ async function practiceSentence(sentence,pi,si){
       let fr=r.frames;
       if(!fr && wordsOk){ // sequential mode: separate pitch pass
         await say('단어는 좋아요. 이번엔 억양만 볼게요. 한 번 더 읽어 주세요');
-        if(await openMic()){ await beep(); fr=await capturePitchOnly(); }
+        if(await openMic()){ await beep(); fr=await capturePitchOnly(); closeMic(); }
       }
       if(fr) into=Core.judgeIntonation(sentence,Core.analyzePitch(fr));
     }
@@ -295,7 +297,7 @@ async function run(){
   audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)(); await audioCtx.resume();
   try{ wakeLock=await navigator.wakeLock.request('screen'); }catch(e){}
   if(!SR){ await say('이 브라우저는 음성 인식을 지원하지 않아요. 크롬으로 열어 주세요'); return finish(); }
-  if($('intoOn').checked && !await openMic()) { await say('마이크를 허용해 주세요'); }
+  if($('intoOn').checked && pitchMode==='concurrent' && !await openMic()) { await say('마이크를 허용해 주세요'); }
   const ps=todaysPassages();
   await say(`좋아요 치윤님. 오늘 지문은 ${ps.map(p=>p.type.replace(/\s*\(.*\)/,'')).join(', 그리고 ')}이에요. 한 문장씩 불러 드릴게요. 삐 소리가 나면 따라 읽어 주세요`);
   for(let pi=0; pi<ps.length && !stopFlag; pi++){
