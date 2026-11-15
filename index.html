@@ -44,7 +44,7 @@ details summary{color:var(--mut);font-size:14px;cursor:pointer}
 <div id="tapAll">화면 아무 곳이나<br>한 번 눌러 주세요<small>휴대폰이 자동 소리 재생을 막았어요</small></div>
 <main>
   <h1>치윤 쉐도잉 · 토스 파트1</h1>
-  <div class="sub">버전 7 · 시작을 누른 뒤에는 화면을 보지 않아도 소리로만 진행돼요.</div>
+  <div class="sub">버전 8 · 시작을 누른 뒤에는 화면을 보지 않아도 소리로만 진행돼요.</div>
 
   <div class="card">
     <div class="row">
@@ -108,13 +108,13 @@ try{
   const el=document.getElementById('asrInfo'); if(el) el.textContent='음성인식 준비 완료 (한 번 읽으면 단어+억양 동시 평가)';
 }catch(e){ window.asrState='failed'; const el=document.getElementById('asrInfo'); if(el) el.textContent='음성인식 모델을 못 받았어요. 크롬 음성인식으로 진행해요 (억양은 한 번 더 읽기)'; console.error(e); }
 </script>
-<script src="passages.js?v=7"></script>
-<script src="core.js?v=7"></script>
+<script src="passages.js?v=8"></script>
+<script src="core.js?v=8"></script>
 <script>
 const $=id=>document.getElementById(id);
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
 let dayOffset=0, running=false, stopFlag=false, wakeLock=null;
-let audioCtx=null, stream=null, analyser=null, buf=null, sampler=null, frames=[], t0=0;
+let audioCtx=null, micCtx=null, stream=null, analyser=null, buf=null, sampler=null, frames=[], t0=0;
 let pitchMode=/Android/i.test(navigator.userAgent)?'sequential':'concurrent';
 const hardWords={}; const logLines=[];
 
@@ -176,12 +176,13 @@ async function openMic(){
   if(stream){ const t=stream.getAudioTracks()[0]; if(t && t.readyState==='live' && t.enabled && !t.muted) return true; closeMic(); }
   try{
     stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:false,autoGainControl:true}});
-    const src=audioCtx.createMediaStreamSource(stream);
-    analyser=audioCtx.createAnalyser(); analyser.fftSize=2048; src.connect(analyser);
+    micCtx=new (window.AudioContext||window.webkitAudioContext)(); await micCtx.resume();
+    const src=micCtx.createMediaStreamSource(stream);
+    analyser=micCtx.createAnalyser(); analyser.fftSize=2048; src.connect(analyser);
     buf=new Float32Array(analyser.fftSize); return true;
   }catch(e){ stream=null; return false; }
 }
-function closeMic(){ if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; analyser=null; } }
+function closeMic(){ if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; analyser=null; } if(micCtx){ try{micCtx.close();}catch(e){} micCtx=null; } }
 function detectPitch(b,sr){
   let rms=0; for(let i=0;i<b.length;i++) rms+=b[i]*b[i]; rms=Math.sqrt(rms/b.length);
   if(rms<0.008) return {rms,f0:0};
@@ -199,7 +200,7 @@ function startSampling(){
   sampler=setInterval(()=>{
     if(!analyser) return;
     analyser.getFloatTimeDomainData(buf);
-    const p=detectPitch(buf,audioCtx.sampleRate);
+    const p=detectPitch(buf,micCtx.sampleRate);
     frames.push({t:(performance.now()-t0)/1000, rms:p.rms, f0:p.f0});
     $('lvl').style.width=Math.min(100,Math.sqrt(p.rms)*300)+'%';
   },20);
@@ -211,10 +212,11 @@ let proc=null, pcm=[];
 function captureUtterance(silenceEnd=1.2, maxSec=25, waitSec=7){
   return new Promise(async res=>{
     if(!await openMic()) return res({err:'not-allowed'});
-    const src=audioCtx.createMediaStreamSource(stream);
-    proc=audioCtx.createScriptProcessor(4096,1,1); pcm=[];
-    const mute=audioCtx.createGain(); mute.gain.value=0;
-    src.connect(proc); proc.connect(mute); mute.connect(audioCtx.destination);
+    await micCtx.resume();
+    const src=micCtx.createMediaStreamSource(stream);
+    proc=micCtx.createScriptProcessor(4096,1,1); pcm=[];
+    const mute=micCtx.createGain(); mute.gain.value=0;
+    src.connect(proc); proc.connect(mute); mute.connect(micCtx.destination);
     proc.onaudioprocess=e=>{ pcm.push(new Float32Array(e.inputBuffer.getChannelData(0))); };
     startSampling(); let started=false, silent=0, loud=0, floor=null, peak=0;
     const iv=setInterval(()=>{
@@ -227,7 +229,7 @@ function captureUtterance(silenceEnd=1.2, maxSec=25, waitSec=7){
       if((started&&silent>=silenceEnd) || el>maxSec || (!started&&el>waitSec) || stopFlag){
         clearInterval(iv); const fr=stopSampling();
         try{ proc.disconnect(); src.disconnect(); }catch(e){}
-        res({frames:fr, pcm:concat(pcm), sr:audioCtx.sampleRate, spoke:started});
+        res({frames:fr, pcm:concat(pcm), sr:micCtx.sampleRate, spoke:started, peak});
       }
     },100);
   });
@@ -241,7 +243,9 @@ async function whisper(pcm16){
 }
 async function listenWhisper(long){
   $('heard').textContent='듣는 중…';
-  const c= long ? await captureUtterance(2.2,70,8) : await captureUtterance();
+  let c= long ? await captureUtterance(2.2,70,8) : await captureUtterance();
+  if(!c.err && !c.spoke && c.peak===0 && !stopFlag){ closeMic(); await new Promise(r=>setTimeout(r,300)); await beep(660);
+    c= long ? await captureUtterance(2.2,70,8) : await captureUtterance(); }
   if(c.err) return {text:'',err:c.err,frames:null};
   if(!c.spoke) return {text:'',err:'no-speech',frames:c.frames};
   $('heard').textContent='분석 중…';
@@ -363,7 +367,7 @@ async function run(){
   if(window.asrState==='loading'){ $('status').textContent='음성인식 모델 준비 중…'; await say('음성인식 준비 중이에요. 잠시만요');
     const w0=performance.now(); while(window.asrState==='loading' && performance.now()-w0<180000 && !stopFlag) await new Promise(r=>setTimeout(r,500)); }
   if(!asrReady() && !SR){ await say('이 브라우저는 음성 인식을 지원하지 않아요. 크롬으로 열어 주세요'); return finish(); }
-  if($('intoOn').checked && pitchMode==='concurrent' && !await openMic()) { await say('마이크를 허용해 주세요'); }
+  if((asrReady() || ($('intoOn').checked && pitchMode==='concurrent')) && !await openMic()) { await say('마이크를 허용해 주세요'); }
   const ps=todaysPassages();
   for(let pi=0; pi<ps.length && !stopFlag; pi++){
     const ss=Core.splitSentences(ps[pi].text);
