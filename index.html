@@ -44,7 +44,7 @@ details summary{color:var(--mut);font-size:14px;cursor:pointer}
 <div id="tapAll">화면 아무 곳이나<br>한 번 눌러 주세요<small>휴대폰이 자동 소리 재생을 막았어요</small></div>
 <main>
   <h1>치윤 쉐도잉 · 토스 파트1</h1>
-  <div class="sub">버전 12 · 시작을 누른 뒤에는 화면을 보지 않아도 소리로만 진행돼요.</div>
+  <div class="sub">버전 13 · 시작을 누른 뒤에는 화면을 보지 않아도 소리로만 진행돼요.</div>
 
   <div class="row" style="margin-bottom:10px">
     <button id="modeA" style="flex:1">🚗 출근 따라읽기</button>
@@ -59,6 +59,7 @@ details summary{color:var(--mut);font-size:14px;cursor:pointer}
   </div>
 
   <button class="big" id="startBtn">▶ 시작</button>
+  <a href="exam.html" style="display:block;margin-top:8px"><button style="width:100%;background:#3b2a4a">⏱ 실전 연습 (파트1~5·모의고사) & 📚 자료 모음</button></a>
   <button id="micTest" style="width:100%;margin-top:8px">🎤 마이크 시험 (아무 영어나 말해 보세요)</button>
 
   <div class="card" style="margin-top:12px">
@@ -99,7 +100,7 @@ details summary{color:var(--mut);font-size:14px;cursor:pointer}
   <div class="sub">음성 명령: 따라 읽는 대신 영어로 <b>"next"</b> 라고 하면 다음 문장, <b>"stop"</b> 이라고 하면 종료.</div>
 </main>
 <script>
-const APP_VER=12;
+const APP_VER=13;
 (function(){
   try{
     fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{
@@ -126,9 +127,9 @@ try{
   const el=document.getElementById('asrInfo'); if(el) el.textContent='음성인식 준비 완료 (한 번 읽으면 단어+억양 동시 평가)';
 }catch(e){ window.asrState='failed'; const el=document.getElementById('asrInfo'); if(el) el.textContent='음성인식 모델을 못 받았어요. 크롬 음성인식으로 진행해요 (억양은 한 번 더 읽기)'; console.error(e); }
 </script>
-<script src="passages.js?v=12"></script>
-<script src="vocab.js?v=12"></script>
-<script src="core.js?v=12"></script>
+<script src="passages.js?v=13"></script>
+<script src="vocab.js?v=13"></script>
+<script src="core.js?v=13"></script>
 <script>
 const $=id=>document.getElementById(id);
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
@@ -469,7 +470,7 @@ async function practiceSentence(sentence,pi,si){
 async function run(){
   running=true; stopFlag=false; $('startBtn').textContent='■ 그만'; $('startBtn').classList.add('stop');
   audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)(); await audioCtx.resume();
-  try{ wakeLock=await navigator.wakeLock.request('screen'); }catch(e){}
+  try{ wakeLock=await Promise.race([navigator.wakeLock.request('screen'), new Promise(r=>setTimeout(()=>r(null),1500))]); }catch(e){}
   if(mode==='vocab'){ if(!SR){ await say('크롬으로 열어 주세요'); return finish(); } await runVocab(); return finish(); }
   if(window.asrState==='loading'){ $('status').textContent='음성인식 모델 준비 중…'; await say('음성인식 준비 중이에요. 잠시만요');
     const w0=performance.now(); while(window.asrState==='loading' && performance.now()-w0<180000 && !stopFlag) await new Promise(r=>setTimeout(r,500)); }
@@ -513,7 +514,7 @@ function finish(){
   $('startBtn').textContent='▶ 시작'; $('startBtn').classList.remove('stop'); $('status').textContent='끝'; if(mode==='vocab') renderVocab(); else renderPassages();
 }
 $('startBtn').onclick=()=>{ if(running){ stopFlag=true; speechSynthesis.cancel(); $('status').textContent='멈추는 중…'; } else run().catch(e=>{ $('fb').textContent='오류: '+e.message; finish(); }); };
-document.addEventListener('visibilitychange',async()=>{ if(running&&document.visibilityState==='visible'){ try{ wakeLock=await navigator.wakeLock.request('screen'); }catch(e){} } });
+document.addEventListener('visibilitychange',async()=>{ if(running&&document.visibilityState==='visible'){ try{ wakeLock=await Promise.race([navigator.wakeLock.request('screen'), new Promise(r=>setTimeout(()=>r(null),1500))]); }catch(e){} } });
 $('micTest').onclick=async()=>{
   if(running) return; closeMic();
   $('status').textContent='마이크 시험: 영어로 한 문장 말해 보세요'; $('heard').textContent='듣는 중…'; $('fb').textContent='';

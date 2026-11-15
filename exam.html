@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#10141a">
+<title>치윤 쉐도잉 · 실전 연습 & 자료</title>
+<style>
+:root{--bg:#10141a;--card:#1a2029;--fg:#eef2f6;--mut:#94a3b8;--acc:#4f9cf9;--ok:#34c38f;--bad:#f46a6a;--warn:#f1b44c}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif}
+main{max-width:620px;margin:0 auto;padding:16px 14px 60px}
+a{color:#8cc0ff}
+h1{font-size:20px;margin:4px 0}
+h2{font-size:17px;margin:18px 0 8px}
+h3{font-size:15px;margin:14px 0 6px;color:var(--acc)}
+.sub{color:var(--mut);font-size:13px}
+.tabs{display:flex;gap:8px;margin:12px 0}
+.tabs button{flex:1}
+button{font:inherit;border:0;border-radius:12px;padding:11px 12px;background:#2a3340;color:var(--fg)}
+button.on{background:var(--acc);color:#fff}
+.card{background:var(--card);border-radius:14px;padding:14px;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.big{width:100%;padding:18px;font-size:19px;font-weight:700;background:var(--acc);color:#fff;border-radius:14px}
+#timer{font-size:56px;font-weight:800;text-align:center;font-variant-numeric:tabular-nums;margin:6px 0}
+#phase{text-align:center;font-weight:700;letter-spacing:.06em}
+.prep{color:var(--warn)} .resp{color:var(--bad)}
+#stage{font-size:16px;line-height:1.6}
+table{border-collapse:collapse;width:100%;font-size:14px;margin-top:6px}
+th,td{border:1px solid #334155;padding:6px;text-align:left;vertical-align:top}
+th{background:#243042}
+.rec{display:flex;align-items:center;gap:8px;margin:8px 0;flex-wrap:wrap}
+.rec audio{width:100%}
+ul.links{padding-left:18px;margin:6px 0}
+ul.links li{margin:5px 0;line-height:1.45}
+.tag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:999px;background:#2a3340;color:var(--mut);margin-left:4px}
+.hide{display:none}
+</style>
+</head>
+<body>
+<main>
+  <div class="row"><a href="./">← 따라읽기·표현 앱으로</a></div>
+  <h1>실전 연습 & 자료 모음</h1>
+  <div class="sub">실제 시험과 같은 준비·답변 시간으로 연습하고, 녹음을 Claude 대화에 바로 공유하세요.</div>
+  <div class="tabs"><button id="tabP" class="on">⏱ 실전 연습</button><button id="tabR">📚 자료 모음</button></div>
+
+  <!-- PRACTICE -->
+  <section id="secP">
+    <div class="card">
+      <div class="row" style="display:flex;gap:8px;align-items:center">
+        <button id="dPrev">◀</button><div id="dLabel" style="flex:1;text-align:center;font-weight:700"></div><button id="dNext">▶</button>
+      </div>
+      <div class="grid" style="margin-top:10px">
+        <button data-part="1">파트1<br><small>Q1–2 읽기</small></button>
+        <button data-part="2">파트2<br><small>Q3–4 사진</small></button>
+        <button data-part="3">파트3<br><small>Q5–7 질문</small></button>
+        <button data-part="4">파트4<br><small>Q8–10 표</small></button>
+        <button data-part="5">파트5<br><small>Q11 의견</small></button>
+        <button data-part="all" style="background:#3b2a4a">모의고사<br><small>Q1–11 전체</small></button>
+      </div>
+    </div>
+    <div class="card">
+      <div id="phase">대기 중</div>
+      <div id="timer">--</div>
+      <div id="stage" class="sub">위에서 파트를 고르면 시작해요. 처음 한 번은 마이크 허용을 눌러 주세요.</div>
+      <button id="stopBtn" class="hide" style="width:100%;margin-top:10px;background:var(--bad)">■ 그만</button>
+    </div>
+    <div class="card" id="recBox">
+      <b>녹음한 답변</b> <span class="sub">— 공유 버튼으로 Claude 앱의 오늘 대화에 보내면 피드백을 받아요.</span>
+      <div id="recs" class="sub" style="margin-top:6px">아직 없음</div>
+      <button id="shareAll" class="hide" style="width:100%;margin-top:8px">📤 전부 공유</button>
+    </div>
+  </section>
+
+  <!-- RESOURCES -->
+  <section id="secR" class="hide">
+    <div class="card">
+      <h2>⭐ 공식 자료 (가장 먼저)</h2>
+      <ul class="links">
+        <li><a href="https://m.exam.toeic.co.kr/content/common/realQuestion.php?examCate=TOS" target="_blank">한국TOEIC위원회 실제 기출문제 공개 (토익스피킹, 파트별 영상)</a> <span class="tag">공식·무료</span><br><span class="sub">실제 정기시험에 나온 문제를 파트별 영상으로 공개. 사이트 위쪽 TOEIC S&amp;W 메뉴에서 회차 선택.</span></li>
+        <li><a href="https://www.toeicstory.co.kr/2414" target="_blank">토익스토리: 실제 기출 + 수험자 답변 + ETS 채점관 코멘트</a> <span class="tag">공식 블로그</span></li>
+        <li><a href="https://www.ets.org/toeic/test-takers/sample-questions.html" target="_blank">ETS 공식 Speaking &amp; Writing 샘플 테스트 PDF</a> <span class="tag">영문</span><br><span class="sub">페이지에서 "TOEIC Speaking and Writing Sample Tests" Download.</span></li>
+      </ul>
+    </div>
+    <div class="card">
+      <h2>🎬 전체 모의고사 영상 (실전처럼 타이머 포함)</h2>
+      <ul class="links">
+        <li><a href="https://www.youtube.com/@tosme_opicme" target="_blank">토오미 채널 — 최신 기출변형 모의고사</a> <span class="tag">최신</span></li>
+        <li><a href="https://www.youtube.com/playlist?list=PLa47Re_Ql1jkpcX6gZhjY01qWxprddTBH" target="_blank">실제 시험 화면 구성 모의고사 재생목록</a></li>
+        <li><a href="https://www.youtube.com/playlist?list=PL8-zrEeeBrpPsguFDwDdJ-VyFMuTOe5Gn" target="_blank">독학용 강의·모의고사·만능문장 재생목록</a></li>
+        <li>그웬랩 월별 시험 복원 모의고사 + 풀이:
+          <a href="https://www.youtube.com/watch?v=6rBB48PsiUI" target="_blank">2025.10</a> ·
+          <a href="https://www.youtube.com/watch?v=jJ6XHhUovCA" target="_blank">2025.9 ②</a> ·
+          <a href="https://www.youtube.com/watch?v=1BhdlHvzmWw" target="_blank">2025.9 ①</a> ·
+          <a href="https://www.youtube.com/watch?v=gO2isLH1w9o" target="_blank">2025.8</a> ·
+          <a href="https://www.youtube.com/watch?v=XquKJpeSZ6A" target="_blank">2025.7</a> ·
+          <a href="https://www.youtube.com/watch?v=aFh7abSybXw" target="_blank">2025.5</a> ·
+          <a href="https://www.youtube.com/watch?v=3S0gnIe0wos" target="_blank">2025.2</a></li>
+        <li><a href="https://www.youtube.com/watch?v=fStpv7JIGSA" target="_blank">TOEIC Speaking Test #20 (영문, 2026 대비, 샘플 답변 포함)</a></li>
+        <li><a href="https://www.youtube.com/watch?v=OOZ7akRPZRU" target="_blank">고난도 기출변형 모의고사 (써니토익스피킹)</a> <span class="tag">어려움</span></li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>파트1 지문 읽기</h3>
+      <ul class="links">
+        <li><a href="https://youtu.be/FOwZzYapaZ0" target="_blank">그웬랩 Part1 빈출 문장 정리</a></li>
+        <li><a href="https://toshigh.tistory.com/22" target="_blank">토스하이 파트1 기출 지문 + 모범 낭독 모음</a></li>
+        <li><a href="https://toshigh.tistory.com/61" target="_blank">파트1 발음·억양 연습법</a></li>
+      </ul>
+      <h3>파트2 사진 묘사 (사진 2장, 45초/30초)</h3>
+      <ul class="links">
+        <li><a href="https://youtu.be/XkRBtcoH6Fs" target="_blank">그웬랩 Part2 빈출 표현</a></li>
+        <li><a href="https://www.youtube.com/shorts/7iCDo-GN4_o" target="_blank">30초 모범 답변 (쇼츠)</a> · <a href="https://www.youtube.com/shorts/FptXzaBNHq0" target="_blank">만점 답변 예시 (쇼츠)</a></li>
+        <li><a href="https://mojji.bravohsc.com/entry/1%EC%9D%BC%EC%B0%A8-%ED%86%A0%EC%9D%B5-%EC%8A%A4%ED%94%BC%ED%82%B9-%EC%82%AC%EC%A7%84-%EB%AC%98%EC%82%AC%ED%95%98%EA%B8%B0-%EB%A7%A4%EC%9D%BC-%EC%97%B0%EC%8A%B5%ED%95%B4%EB%B3%B4%EA%B8%B0" target="_blank">사진 + 모범 답안 매일 연습</a></li>
+        <li><a href="https://m.eckedu.com/eck/?c=976%2F1671&cat_=&uid=880" target="_blank">ECK 사진 묘사 20회 (사진 + 답안)</a> <span class="tag">옛 시간 기준이니 30초로 줄여 연습</span></li>
+        <li>연습용 무료 사진 (Pexels):
+          <a href="https://www.pexels.com/search/office%20meeting/" target="_blank">사무실 회의</a> ·
+          <a href="https://www.pexels.com/search/cafe%20barista%20customer/" target="_blank">카페</a> ·
+          <a href="https://www.pexels.com/search/supermarket%20shopping/" target="_blank">마트</a> ·
+          <a href="https://www.pexels.com/search/street%20crosswalk%20people/" target="_blank">거리</a> ·
+          <a href="https://www.pexels.com/search/outdoor%20market/" target="_blank">시장</a> ·
+          <a href="https://www.pexels.com/search/airport%20people%20luggage/" target="_blank">공항</a> ·
+          <a href="https://www.pexels.com/search/construction%20workers/" target="_blank">공사장</a> ·
+          <a href="https://www.pexels.com/search/restaurant%20waiter/" target="_blank">식당</a> ·
+          <a href="https://www.pexels.com/search/library%20students/" target="_blank">도서관</a> ·
+          <a href="https://www.pexels.com/search/park%20people/" target="_blank">공원</a></li>
+      </ul>
+      <h3>파트3 질문 답변 (3초/15·15·30초)</h3>
+      <ul class="links">
+        <li><a href="https://youtu.be/eVVUCzK_5uE" target="_blank">그웬랩 Part3 활용 콤보</a></li>
+        <li><a href="https://toshigh.tistory.com/140" target="_blank">토스하이 파트3 기출 실습 + 출제 경향</a> · <a href="https://toshigh.tistory.com/115" target="_blank">5년 주제 분석</a></li>
+      </ul>
+      <h3>파트4 표 보고 답하기 (45초/15·15·30초)</h3>
+      <ul class="links">
+        <li><a href="https://youtu.be/EG49UGBI34A" target="_blank">그웬랩 Part4 빈출 표현</a></li>
+        <li><a href="https://www.youtube.com/watch?v=PK-Mj6p5fHg" target="_blank">10번 만점 답변 예시 (그웬)</a></li>
+        <li><a href="https://toshigh.tistory.com/91" target="_blank">토스하이 파트4 기출 실습 (행사 일정표)</a> · <a href="https://toshigh.tistory.com/141" target="_blank">면접 일정표 실습</a></li>
+        <li><a href="https://gyoogle.dev/blog/etc/toeic-speaking/part-4.html" target="_blank">표 유형별 자주 나오는 질문·문장 정리</a></li>
+      </ul>
+      <h3>파트5 의견 제시 (45초/60초)</h3>
+      <ul class="links">
+        <li><a href="https://youtu.be/BKKocxkJ6QU" target="_blank">그웬랩 Part5 에피소드 모음</a> (예시로 쓸 경험담)</li>
+        <li><a href="https://www.youtube.com/shorts/AHDHk4cu8BM" target="_blank">11번 만점 답변 예시</a> · <a href="https://www.youtube.com/shorts/Yqxv88aiJHE" target="_blank">60초 템플릿 답변</a></li>
+        <li>11번 기출 + 답변 정리:
+          <a href="https://mate-info.com/%ED%86%A0%EC%9D%B5%EC%8A%A4%ED%94%BC%ED%82%B9-%ED%8C%8C%ED%8A%B85-11%EB%B2%88-%EA%B8%B0%EC%B6%9C%EB%AA%A8%EC%9D%8C-%E2%91%A1-%ED%86%A0%EC%8A%A4-%EB%AC%B8%EC%A0%9C%EB%8B%B5%EB%B3%80-%EC%A0%95/" target="_blank">②</a> ·
+          <a href="https://mate-info.com/%ED%86%A0%EC%9D%B5%EC%8A%A4%ED%94%BC%ED%82%B9-%ED%8C%8C%ED%8A%B85-11%EB%B2%88-%EA%B8%B0%EC%B6%9C%EB%AA%A8%EC%9D%8C-%E2%91%A2-%ED%86%A0%EC%8A%A4-%EB%AC%B8%EC%A0%9C%EB%8B%B5%EB%B3%80-%EC%A0%95/" target="_blank">③</a> ·
+          <a href="https://mate-info.com/%ED%86%A0%EC%9D%B5%EC%8A%A4%ED%94%BC%ED%82%B9-%ED%8C%8C%ED%8A%B85-11%EB%B2%88-%EA%B8%B0%EC%B6%9C%EB%AA%A8%EC%9D%8C-%E2%91%A7-%ED%86%A0%EC%8A%A4-%EB%AC%B8%EC%A0%9C%EB%8B%B5%EB%B3%80-%EC%A0%95/" target="_blank">⑧</a> ·
+          <a href="https://mate-info.com/%ED%86%A0%EC%9D%B5%EC%8A%A4%ED%94%BC%ED%82%B9-%ED%8C%8C%ED%8A%B85-11%EB%B2%88-%EA%B8%B0%EC%B6%9C%EB%AA%A8%EC%9D%8C-%E2%91%A9-%ED%86%A0%EC%8A%A4-%EB%AC%B8%EC%A0%9C%EB%8B%B5%EB%B3%80-%EC%A0%95/" target="_blank">⑩</a></li>
+        <li><a href="https://toshigh.tistory.com/142" target="_blank">토스하이 파트5 60초 발화 훈련법</a></li>
+      </ul>
+    </div>
+    <div class="sub">링크는 2026-11-15 기준으로 찾은 것이에요. 영상이 내려가 있으면 Claude에게 알려 주세요.</div>
+  </section>
+</main>
+<script src="passages.js?v=13"></script>
+<script src="practice.js?v=13"></script>
+<script>
+const $=id=>document.getElementById(id);
+const START='2026-11-16';
+let dOff=0, stopFlag=false, running=false, stream=null, recs=[], ctx=null, wakeLock=null;
+function seoul(){ return new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'})); }
+function dayIdx(){ const s=new Date(START+'T00:00:00'), d=seoul(); d.setHours(0,0,0,0); return Math.round((d-s)/86400000)+dOff; }
+function dayN(){ return Math.max(0,dayIdx())%13; } // 0..12
+function renderDay(){ const i=dayIdx(); $('dLabel').textContent= 'Day '+(dayN()+1)+(i<0?' (미리보기)':'')+(dOff===0?' · 오늘':''); }
+$('dPrev').onclick=()=>{ if(!running){dOff--;renderDay();} }; $('dNext').onclick=()=>{ if(!running){dOff++;renderDay();} };
+$('tabP').onclick=()=>{ $('secP').classList.remove('hide'); $('secR').classList.add('hide'); $('tabP').classList.add('on'); $('tabR').classList.remove('on'); };
+$('tabR').onclick=()=>{ $('secR').classList.remove('hide'); $('secP').classList.add('hide'); $('tabR').classList.add('on'); $('tabP').classList.remove('on'); };
+if(location.hash==='#resources') $('tabR').onclick();
+
+// ---------- audio helpers ----------
+let voices=[]; function lv(){ voices=speechSynthesis.getVoices(); } lv(); speechSynthesis.onvoiceschanged=lv;
+function say(t,lang='en'){ return new Promise(r=>{ if(stopFlag) return r(); const u=new SpeechSynthesisUtterance(t);
+  u.lang=lang==='en'?'en-US':'ko-KR'; const v=voices.filter(v=>v.lang&&v.lang.replace('_','-').toLowerCase().startsWith(lang==='en'?'en-us':'ko')); const g=v.find(x=>/google/i.test(x.name))||v[0]; if(g)u.voice=g;
+  u.rate=lang==='en'?0.95:1.05; let done=false; const f=()=>{if(!done){done=true;r();}}; u.onend=f; u.onerror=f; setTimeout(f,3000+t.length*120); speechSynthesis.speak(u); }); }
+function beep(f=880,d=0.25){ try{ const o=ctx.createOscillator(),g=ctx.createGain(); o.frequency.value=f; g.gain.value=0.2; o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime+d);}catch(e){} return new Promise(r=>setTimeout(r,d*1000+80)); }
+function countdown(sec,label,cls){ return new Promise(r=>{ $('phase').textContent=label; $('phase').className=cls; let t=sec; $('timer').textContent=fmt(t);
+  const iv=setInterval(()=>{ if(stopFlag){clearInterval(iv);return r();} t--; $('timer').textContent=fmt(Math.max(t,0)); if(t<=0){clearInterval(iv); r();} },1000); }); }
+function fmt(s){ return '00:'+String(s).padStart(2,'0'); }
+async function openMic(){ if(stream) return true; try{ stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:true}}); return true; }catch(e){ return false; } }
+async function respond(sec,label){
+  await beep();
+  const mime=MediaRecorder.isTypeSupported('audio/webm;codecs=opus')?'audio/webm;codecs=opus':(MediaRecorder.isTypeSupported('audio/mp4')?'audio/mp4':'');
+  const mr=new MediaRecorder(stream, mime?{mimeType:mime}:{}); const chunks=[]; mr.ondataavailable=e=>{ if(e.data.size) chunks.push(e.data); };
+  mr.start(); await countdown(sec,'RESPONSE TIME · 녹음 중','resp'); mr.stop();
+  await new Promise(r=>mr.onstop=r);
+  const ext=(mr.mimeType||'').includes('mp4')?'m4a':'webm';
+  const blob=new Blob(chunks,{type:mr.mimeType||'audio/webm'});
+  recs.push({name:`Day${dayN()+1}_${label}.${ext}`, blob}); renderRecs(); await beep(500,0.15);
+}
+function renderRecs(){
+  if(!recs.length){ $('recs').textContent='아직 없음'; $('shareAll').classList.add('hide'); return; }
+  $('recs').innerHTML=''; recs.forEach((r,i)=>{ const d=document.createElement('div'); d.className='rec';
+    const url=URL.createObjectURL(r.blob); d.innerHTML=`<b style="min-width:120px">${r.name}</b><button data-i="${i}">📤 공유</button><audio controls src="${url}"></audio>`;
+    d.querySelector('button').onclick=()=>shareFiles([r]); $('recs').appendChild(d); });
+  $('shareAll').classList.remove('hide');
+}
+async function shareFiles(list){
+  const files=list.map(r=>new File([r.blob],r.name,{type:r.blob.type}));
+  try{ if(navigator.canShare && navigator.canShare({files})) await navigator.share({files, title:'토스 연습 녹음', text:'오늘 연습 녹음이에요. 피드백 부탁해요.'});
+       else list.forEach(r=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(r.blob); a.download=r.name; a.click(); }); }catch(e){}
+}
+$('shareAll').onclick=()=>shareFiles(recs);
+function show(html){ $('stage').innerHTML=html; $('stage').classList.remove('sub'); }
+
+// ---------- parts ----------
+async function part1(){
+  const n=PASSAGES.length, k=((dayIdx()*2)%n+n)%n; const ps=[PASSAGES[k],PASSAGES[(k+1)%n]];
+  for(let i=0;i<2 && !stopFlag;i++){
+    show(`<b>Question ${i+1} of 11 · Read a text aloud</b><p>${ps[i].text}</p>`);
+    await countdown(45,'PREPARATION TIME','prep'); if(stopFlag) return;
+    await respond(45,`Q${i+1}`);
+  }
+}
+function waitTap(btnText){ return new Promise(r=>{ const b=document.createElement('button'); b.className='big'; b.style.marginTop='10px'; b.textContent=btnText; b.onclick=()=>{b.remove();r();}; $('stage').appendChild(b); const iv=setInterval(()=>{ if(stopFlag){clearInterval(iv); b.remove(); r();} },300); b.addEventListener('click',()=>clearInterval(iv)); }); }
+async function part2(){
+  const sc=P2_SCENES[dayN()];
+  for(let i=0;i<2 && !stopFlag;i++){
+    const q=i+3, url='https://www.pexels.com/search/'+encodeURIComponent(sc[i])+'/';
+    show(`<b>Question ${q} of 11 · Describe a picture</b><p>사진 주제: <b>${sc[i]}</b></p><p><a href="${url}" target="_blank">① 여기를 눌러 사진 하나를 크게 열어 두세요</a> (화면 분할하거나, 다른 기기로 열어도 좋아요)</p>`);
+    await waitTap('② 사진 준비됐어요 → 시작'); if(stopFlag) return;
+    await countdown(45,'PREPARATION TIME','prep'); if(stopFlag) return;
+    await respond(30,`Q${q}`);
+  }
+}
+async function part3(){
+  const s=P3_SETS[dayN()]; const times=[15,15,30];
+  show(`<b>Questions 5–7 · Respond to questions</b><p>${s.ctx} You have agreed to participate in a telephone interview.</p>`);
+  await say(`Imagine that ${s.ctx.charAt(0).toLowerCase()+s.ctx.slice(1)} You have agreed to participate in a telephone interview.`);
+  for(let i=0;i<3 && !stopFlag;i++){
+    show(`<b>Question ${i+5} of 11</b><p>${s.ctx}</p><p style="font-size:18px">${s.q[i]}</p>`);
+    await say(s.q[i]); if(stopFlag) return;
+    await countdown(3,'PREPARATION TIME','prep'); if(stopFlag) return;
+    await respond(times[i],`Q${i+5}`);
+  }
+}
+function tableHTML(t){ return `<b>${t.title}</b><div class="sub">${t.info}</div><table><tr>${t.head.map(h=>`<th>${h}</th>`).join('')}</tr>${t.rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</table>`; }
+async function part4(){
+  const d=P4_DAYS[dayN()], t=P4_TABLES[d.t]; const times=[15,15,30];
+  show(`<b>Questions 8–10 · Respond using information provided</b>${tableHTML(t)}<p class="sub">질문은 화면에 안 나오고 소리로만 나와요.</p>`);
+  await say('Hi, I am calling to ask some questions. Could you help me?');
+  await countdown(45,'READING TIME','prep'); if(stopFlag) return;
+  for(let i=0;i<3 && !stopFlag;i++){
+    $('phase').textContent=`Question ${i+8} · 듣기`; await say(d.q[i]); if(i===2){ await new Promise(r=>setTimeout(r,800)); await say(d.q[i]); }
+    if(stopFlag) return; await countdown(3,'PREPARATION TIME','prep'); if(stopFlag) return;
+    await respond(times[i],`Q${i+8}`);
+  }
+  show(`${tableHTML(t)}<p><b>질문 다시 보기</b><br>Q8. ${d.q[0]}<br>Q9. ${d.q[1]}<br>Q10. ${d.q[2]}</p>`);
+}
+async function part5(which){
+  const qs=P5_DAYS[dayN()]; const list= which==null ? [0,1] : [which];
+  for(const k of list){ if(stopFlag) return;
+    show(`<b>Question 11 of 11 · Express an opinion</b><p style="font-size:17px">${qs[k]}</p>`);
+    await say(qs[k]); if(stopFlag) return;
+    await countdown(45,'PREPARATION TIME','prep'); if(stopFlag) return;
+    await respond(60,`Q11-${k+1}`);
+  }
+}
+async function run(part){
+  if(running) return; running=true; stopFlag=false; $('stopBtn').classList.remove('hide');
+  ctx=ctx||new (window.AudioContext||window.webkitAudioContext)(); await Promise.race([ctx.resume(), new Promise(r=>setTimeout(r,1500))]);
+  if(!await openMic()){ show('마이크를 허용해 주세요. (설정 → 애플리케이션 → 치윤 쉐도잉/Chrome → 권한 → 마이크)'); return end(); }
+  try{ wakeLock=await Promise.race([navigator.wakeLock.request('screen'), new Promise(r=>setTimeout(()=>r(null),1500))]); }catch(e){}
+  try{
+    if(part==='1') await part1(); else if(part==='2') await part2(); else if(part==='3') await part3();
+    else if(part==='4') await part4(); else if(part==='5') await part5();
+    else { await part1(); if(!stopFlag) await part2(); if(!stopFlag) await part3(); if(!stopFlag) await part4(); if(!stopFlag) await part5(0); }
+  }catch(e){ show('오류: '+e.message); }
+  end(!stopFlag);
+}
+function end(done){ running=false; $('stopBtn').classList.add('hide'); speechSynthesis.cancel(); try{wakeLock&&wakeLock.release();}catch(e){} $('timer').textContent='--';
+  $('phase').textContent= done? '끝! 아래 녹음을 Claude에게 공유하세요':'멈춤'; $('phase').className=''; }
+$('stopBtn').onclick=()=>{ stopFlag=true; speechSynthesis.cancel(); };
+document.querySelectorAll('[data-part]').forEach(b=>b.onclick=()=>run(b.dataset.part));
+renderDay();
+</script>
+</body>
+</html>
