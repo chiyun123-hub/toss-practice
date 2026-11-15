@@ -59,6 +59,7 @@ details summary{color:var(--mut);font-size:14px;cursor:pointer}
 
   <div class="card" style="margin-top:12px">
     <div id="status">대기 중</div>
+    <div id="asrInfo" style="font-size:13px;color:#94a3b8;margin-top:4px">음성인식 모델 준비 중…</div>
     <div class="meter"><div id="lvl"></div></div>
     <div id="heard"></div>
     <div id="fb"></div>
@@ -93,6 +94,20 @@ details summary{color:var(--mut);font-size:14px;cursor:pointer}
   </div>
   <div class="sub">음성 명령: 따라 읽는 대신 영어로 <b>"next"</b> 라고 하면 다음 문장, <b>"stop"</b> 이라고 하면 종료.</div>
 </main>
+<script type="module">
+// In-browser speech recognition (Whisper) so one mic stream gives both words and pitch.
+window.asrState='loading';
+try{
+  const T=await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1');
+  T.env.allowLocalModels=false;
+  const onP=p=>{ if(p.status==='progress'&&p.total){ window.asrProgress=Math.round(p.loaded/p.total*100); const el=document.getElementById('asrInfo'); if(el) el.textContent='음성인식 모델 받는 중… '+window.asrProgress+'% (처음 한 번만, 와이파이 권장)'; } };
+  let pipe=null;
+  try{ if(navigator.gpu) pipe=await T.pipeline('automatic-speech-recognition','Xenova/whisper-base.en',{device:'webgpu',dtype:{encoder_model:'fp32',decoder_model_merged:'q4'},progress_callback:onP}); }catch(e){ pipe=null; }
+  if(!pipe) pipe=await T.pipeline('automatic-speech-recognition','Xenova/whisper-base.en',{dtype:'q8',progress_callback:onP});
+  window.asrPipe=pipe; window.asrState='ready';
+  const el=document.getElementById('asrInfo'); if(el) el.textContent='음성인식 준비 완료 (한 번 읽으면 단어+억양 동시 평가)';
+}catch(e){ window.asrState='failed'; const el=document.getElementById('asrInfo'); if(el) el.textContent='음성인식 모델을 못 받았어요. 크롬 음성인식으로 진행해요 (억양은 한 번 더 읽기)'; console.error(e); }
+</script>
 <script src="passages.js"></script>
 <script src="core.js"></script>
 <script>
@@ -191,6 +206,49 @@ function startSampling(){
 }
 function stopSampling(){ clearInterval(sampler); sampler=null; $('lvl').style.width='0%'; return frames.slice(); }
 
+// ---------- one-pass capture (pcm + pitch) ----------
+let proc=null, pcm=[];
+function captureUtterance(silenceEnd=1.2, maxSec=25, waitSec=7){
+  return new Promise(async res=>{
+    if(!await openMic()) return res({err:'not-allowed'});
+    const src=audioCtx.createMediaStreamSource(stream);
+    proc=audioCtx.createScriptProcessor(4096,1,1); pcm=[];
+    const mute=audioCtx.createGain(); mute.gain.value=0;
+    src.connect(proc); proc.connect(mute); mute.connect(audioCtx.destination);
+    proc.onaudioprocess=e=>{ pcm.push(new Float32Array(e.inputBuffer.getChannelData(0))); };
+    startSampling(); let started=false, silent=0, loud=0;
+    const iv=setInterval(()=>{
+      const f=frames[frames.length-1]; if(!f) return;
+      if(f.rms>0.02){ loud++; if(loud>=3) started=true; silent=0; } else { loud=0; if(started) silent+=0.1; }
+      const el=(performance.now()-t0)/1000;
+      if((started&&silent>=silenceEnd) || el>maxSec || (!started&&el>waitSec) || stopFlag){
+        clearInterval(iv); const fr=stopSampling();
+        try{ proc.disconnect(); src.disconnect(); }catch(e){}
+        closeMic(); // release mic so speaker/Bluetooth audio is not switched to call mode
+        res({frames:fr, pcm:concat(pcm), sr:audioCtx.sampleRate, spoke:started});
+      }
+    },100);
+  });
+}
+function concat(chunks){ let n=0; for(const c of chunks) n+=c.length; const o=new Float32Array(n); let k=0; for(const c of chunks){ o.set(c,k); k+=c.length; } return o; }
+function to16k(x,sr){ if(sr===16000) return x; const r=sr/16000, n=Math.floor(x.length/r), o=new Float32Array(n);
+  for(let i=0;i<n;i++){ const p=i*r, j=Math.floor(p), f=p-j; o[i]=x[j]*(1-f)+(x[j+1]||0)*f; } return o; }
+async function whisper(pcm16){
+  const out=await window.asrPipe(pcm16,{chunk_length_s:30,stride_length_s:5});
+  return (Array.isArray(out)?out.map(o=>o.text).join(' '):out.text||'').replace(/\[.*?\]|\(.*?\)/g,'').trim();
+}
+async function listenWhisper(long){
+  $('heard').textContent='듣는 중…';
+  const c= long ? await captureUtterance(2.2,70,8) : await captureUtterance();
+  if(c.err) return {text:'',err:c.err,frames:null};
+  if(!c.spoke) return {text:'',err:'no-speech',frames:c.frames};
+  $('heard').textContent='분석 중…';
+  const text=await whisper(to16k(c.pcm,c.sr));
+  $('heard').textContent='들린 말: '+text;
+  return {text, frames:c.frames};
+}
+function asrReady(){ return window.asrState==='ready' && window.asrPipe; }
+
 // ---------- listening ----------
 function recognizeOnce(){
   return new Promise(res=>{
@@ -218,6 +276,7 @@ function capturePitchOnly(){
   });
 }
 async function listen(){
+  if(asrReady()) return await listenWhisper(false);
   const wantPitch=$('intoOn').checked;
   if(!wantPitch){ closeMic(); const r=await recognizeOnce(); return {...r,frames:null}; }
   if(pitchMode==='concurrent'){
@@ -297,7 +356,9 @@ async function run(){
   running=true; stopFlag=false; $('startBtn').textContent='■ 그만'; $('startBtn').classList.add('stop');
   audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)(); await audioCtx.resume();
   try{ wakeLock=await navigator.wakeLock.request('screen'); }catch(e){}
-  if(!SR){ await say('이 브라우저는 음성 인식을 지원하지 않아요. 크롬으로 열어 주세요'); return finish(); }
+  if(window.asrState==='loading'){ $('status').textContent='음성인식 모델 준비 중…'; await say('음성인식 준비 중이에요. 잠시만요');
+    const w0=performance.now(); while(window.asrState==='loading' && performance.now()-w0<180000 && !stopFlag) await new Promise(r=>setTimeout(r,500)); }
+  if(!asrReady() && !SR){ await say('이 브라우저는 음성 인식을 지원하지 않아요. 크롬으로 열어 주세요'); return finish(); }
   if($('intoOn').checked && pitchMode==='concurrent' && !await openMic()) { await say('마이크를 허용해 주세요'); }
   const ps=todaysPassages();
   await say(`좋아요 치윤님. 오늘 지문은 ${ps.map(p=>p.type.replace(/\s*\(.*\)/,'')).join(', 그리고 ')}이에요. 한 문장씩 불러 드릴게요. 삐 소리가 나면 따라 읽어 주세요`);
@@ -323,6 +384,7 @@ async function run(){
 }
 // whole-passage read: keep restarting recognition until 2.5 s with no new words or 60 s
 async function listenLong(){
+  if(asrReady()){ const r=await listenWhisper(true); return r.text||''; }
   closeMic(); let all=''; const start=performance.now();
   while(!stopFlag && performance.now()-start<60000){
     const r=await recognizeOnce(); if(!r.text){ if(all) break; else continue; }
@@ -341,10 +403,12 @@ $('micTest').onclick=async()=>{
   if(running) return; closeMic();
   $('status').textContent='마이크 시험: 영어로 한 문장 말해 보세요'; $('heard').textContent='듣는 중…'; $('fb').textContent='';
   const ua=navigator.userAgent.match(/Chrome\/[\d]+/);
-  const r=await recognizeOnce();
+  audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)(); await audioCtx.resume();
+  const r= asrReady() ? await listenWhisper(false) : await recognizeOnce();
+  if(!asrReady()) closeMic();
   $('status').textContent= r.text ? '마이크 정상' : '못 들음';
   $('fb').innerHTML= (r.text? '<span class="ok">들린 말: '+r.text+'</span>' : '<span class="bad">아무것도 못 들었어요</span>')+
-    '<br>오류 코드: '+(r.err||'없음')+' · 음성인식 지원: '+(SR?'예':'아니오')+' · '+(ua?ua[0]:'');
+    '<br>오류 코드: '+(r.err||'없음')+' · 방식: '+(asrReady()?'내장 Whisper':'크롬 음성인식')+' · '+(ua?ua[0]:'');
 };
 renderDay();
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
