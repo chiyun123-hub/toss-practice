@@ -1,5 +1,5 @@
-// TOEIC Speaking Part 1 style passages (original). Two per day, rotating from 2026-11-16.
-const START_DATE = '2026-11-16';
+// TOEIC Speaking Part 1 style passages (original). Two per day, rotating from 2026-11-15.
+const START_DATE = '2026-11-15';
 const PASSAGES = [
 {type:'안내 방송 (매장)', text:"Attention, Greenfield Market shoppers. Our store will be closing in thirty minutes. Please bring your final selections to the checkout counters at the front of the store. If you need help finding an item, our staff members in green aprons will be happy to assist you. Don't forget that fresh bread, seasonal fruit, and local cheese are twenty percent off until closing. Thank you for shopping with us tonight."},
 {type:'자동응답 메시지', text:"Thank you for calling Riverside Dental Clinic. Our office is currently closed. Our regular hours are Monday through Friday, from eight a.m. to six p.m. To schedule an appointment, please press one. To speak with a nurse, please press two. If this is an emergency, hang up and call your local hospital. We look forward to helping you keep your smile healthy."},

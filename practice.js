@@ -1,4 +1,4 @@
-// 실전 연습 데이터 (연습문제은행 06과 동일). Day 1 = 2026-11-16.
+// 실전 연습 데이터 (연습문제은행 06과 동일). Day 1 = 2026-11-15. Day 14(11/28)는 Day 1 문제로 가볍게 복습.
 const P2_SCENES = [
  ["office meeting presentation","street crosswalk people"],["cafe counter barista customer","supermarket vegetables shopping"],
  ["airport check-in line luggage","park bench people dog"],["construction workers helmet","library students studying"],

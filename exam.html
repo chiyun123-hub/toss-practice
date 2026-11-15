@@ -164,16 +164,16 @@ ul.links li{margin:5px 0;line-height:1.45}
     <div class="sub">링크는 2026-11-15 기준으로 찾은 것이에요. 영상이 내려가 있으면 Claude에게 알려 주세요.</div>
   </section>
 </main>
-<script src="passages.js?v=13"></script>
-<script src="practice.js?v=13"></script>
+<script src="passages.js?v=14"></script>
+<script src="practice.js?v=14"></script>
 <script>
 const $=id=>document.getElementById(id);
-const START='2026-11-16';
+const START='2026-11-15';
 let dOff=0, stopFlag=false, running=false, stream=null, recs=[], ctx=null, wakeLock=null;
 function seoul(){ return new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'})); }
 function dayIdx(){ const s=new Date(START+'T00:00:00'), d=seoul(); d.setHours(0,0,0,0); return Math.round((d-s)/86400000)+dOff; }
-function dayN(){ return Math.max(0,dayIdx())%13; } // 0..12
-function renderDay(){ const i=dayIdx(); $('dLabel').textContent= 'Day '+(dayN()+1)+(i<0?' (미리보기)':'')+(dOff===0?' · 오늘':''); }
+function dayN(){ return (Math.max(0,dayIdx())%14)%13; } // Day14 -> Day1 review
+function renderDay(){ const i=dayIdx(); const dn=Math.max(0,i)%14+1; $('dLabel').textContent= 'Day '+dn+(dn===14?' (Day 1 복습)':'')+(i<0?' (미리보기)':'')+(dOff===0?' · 오늘':''); }
 $('dPrev').onclick=()=>{ if(!running){dOff--;renderDay();} }; $('dNext').onclick=()=>{ if(!running){dOff++;renderDay();} };
 $('tabP').onclick=()=>{ $('secP').classList.remove('hide'); $('secR').classList.add('hide'); $('tabP').classList.add('on'); $('tabR').classList.remove('on'); };
 $('tabR').onclick=()=>{ $('secR').classList.remove('hide'); $('secP').classList.add('hide'); $('tabR').classList.add('on'); $('tabP').classList.remove('on'); };
