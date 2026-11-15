@@ -175,7 +175,7 @@ function beep(f=880,d=0.12){
 async function openMic(){
   if(stream) return true;
   try{
-    stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});
+    stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:false,autoGainControl:true}});
     const src=audioCtx.createMediaStreamSource(stream);
     analyser=audioCtx.createAnalyser(); analyser.fftSize=2048; src.connect(analyser);
     buf=new Float32Array(analyser.fftSize); return true;
@@ -201,7 +201,7 @@ function startSampling(){
     analyser.getFloatTimeDomainData(buf);
     const p=detectPitch(buf,audioCtx.sampleRate);
     frames.push({t:(performance.now()-t0)/1000, rms:p.rms, f0:p.f0});
-    $('lvl').style.width=Math.min(100,p.rms*900)+'%';
+    $('lvl').style.width=Math.min(100,Math.sqrt(p.rms)*300)+'%';
   },20);
 }
 function stopSampling(){ clearInterval(sampler); sampler=null; $('lvl').style.width='0%'; return frames.slice(); }
@@ -216,10 +216,13 @@ function captureUtterance(silenceEnd=1.2, maxSec=25, waitSec=7){
     const mute=audioCtx.createGain(); mute.gain.value=0;
     src.connect(proc); proc.connect(mute); mute.connect(audioCtx.destination);
     proc.onaudioprocess=e=>{ pcm.push(new Float32Array(e.inputBuffer.getChannelData(0))); };
-    startSampling(); let started=false, silent=0, loud=0;
+    startSampling(); let started=false, silent=0, loud=0, floor=null, peak=0;
     const iv=setInterval(()=>{
       const f=frames[frames.length-1]; if(!f) return;
-      if(f.rms>0.02){ loud++; if(loud>=3) started=true; silent=0; } else { loud=0; if(started) silent+=0.1; }
+      const el0=(performance.now()-t0)/1000;
+      if(floor===null){ if(el0<0.4) return; const fs=frames.map(x=>x.rms).sort((a,b)=>a-b); floor=fs[Math.floor(fs.length/2)]||0.001; }
+      const thr=Math.max(0.006, floor*3); peak=Math.max(peak,f.rms); window._lastPeak=peak; window._lastThr=thr;
+      if(f.rms>thr){ loud++; if(loud>=2) started=true; silent=0; } else { loud=0; if(started) silent+=0.1; }
       const el=(performance.now()-t0)/1000;
       if((started&&silent>=silenceEnd) || el>maxSec || (!started&&el>waitSec) || stopFlag){
         clearInterval(iv); const fr=stopSampling();
@@ -247,6 +250,8 @@ async function listenWhisper(long){
   $('heard').textContent='들린 말: '+text;
   return {text, frames:c.frames};
 }
+function diag(r){ return '오류 코드: '+(r.err||'없음')+' · 방식: '+(asrReady()?'내장 Whisper':'크롬 음성인식('+window.asrState+')')+
+  ' · 최대 음량: '+(window._lastPeak!=null?window._lastPeak.toFixed(3):'-')+' / 기준 '+(window._lastThr!=null?window._lastThr.toFixed(3):'-'); }
 function asrReady(){ return window.asrState==='ready' && window.asrPipe; }
 
 // ---------- listening ----------
@@ -309,7 +314,7 @@ async function practiceSentence(sentence,pi,si){
     if(/^stop\b/.test(cmd)) { stopFlag=true; return; }
     if(!r.text){
       if(r.err==='not-allowed'||r.err==='no-sr'){ await say('마이크 권한이 없어서 들을 수 없어요. 크롬에서 마이크를 허용해 주세요'); stopFlag=true; return; }
-      $('fb').innerHTML='<span class="warn">못 들었어요 (오류 코드: '+(r.err||'없음')+')</span>'; noHear++;
+      $('fb').innerHTML='<span class="warn">못 들었어요</span><br><small>'+diag(r)+'</small>'; noHear++;
       if(noHear>=2){ await say('소리가 안 들려서 다음 문장으로 갈게요'); return; }
       await say('잘 못 들었어요. 다시 해 볼게요'); attempt--; continue;
     }
@@ -408,7 +413,7 @@ $('micTest').onclick=async()=>{
   if(!asrReady()) closeMic();
   $('status').textContent= r.text ? '마이크 정상' : '못 들음';
   $('fb').innerHTML= (r.text? '<span class="ok">들린 말: '+r.text+'</span>' : '<span class="bad">아무것도 못 들었어요</span>')+
-    '<br>오류 코드: '+(r.err||'없음')+' · 방식: '+(asrReady()?'내장 Whisper':'크롬 음성인식')+' · '+(ua?ua[0]:'');
+    '<br>'+diag(r)+' · '+(ua?ua[0]:'');
 };
 renderDay();
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
