@@ -44,7 +44,7 @@ details summary{color:var(--mut);font-size:14px;cursor:pointer}
 <div id="tapAll">화면 아무 곳이나<br>한 번 눌러 주세요<small>휴대폰이 자동 소리 재생을 막았어요</small></div>
 <main>
   <h1>치윤 쉐도잉 · 토스 파트1</h1>
-  <div class="sub">버전 10 · 시작을 누른 뒤에는 화면을 보지 않아도 소리로만 진행돼요.</div>
+  <div class="sub">버전 11 · 시작을 누른 뒤에는 화면을 보지 않아도 소리로만 진행돼요.</div>
 
   <div class="row" style="margin-bottom:10px">
     <button id="modeA" style="flex:1">🚗 출근 따라읽기</button>
@@ -112,9 +112,9 @@ try{
   const el=document.getElementById('asrInfo'); if(el) el.textContent='음성인식 준비 완료 (한 번 읽으면 단어+억양 동시 평가)';
 }catch(e){ window.asrState='failed'; const el=document.getElementById('asrInfo'); if(el) el.textContent='음성인식 모델을 못 받았어요. 크롬 음성인식으로 진행해요 (억양은 한 번 더 읽기)'; console.error(e); }
 </script>
-<script src="passages.js?v=10"></script>
-<script src="vocab.js?v=10"></script>
-<script src="core.js?v=10"></script>
+<script src="passages.js?v=11"></script>
+<script src="vocab.js?v=11"></script>
+<script src="core.js?v=11"></script>
 <script>
 const $=id=>document.getElementById(id);
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
@@ -352,7 +352,6 @@ async function askOnce(lang){
 function isCmd(t,words){ const x=(t||'').toLowerCase().replace(/[.!?\s]/g,''); return words.some(w=>x===w); }
 async function runVocab(){
   const v=todaysVocab(); const items=v.items; const wrong=[];
-  await say(`오늘의 표현 ${items.length}개예요. 영어를 듣고 한국어로 말해 주세요`);
   // round 1: EN -> KO
   for(let i=0;i<items.length && !stopFlag;i++){
     const [en,ko]=items[i]; renderVocab(i);
