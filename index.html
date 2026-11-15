@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>토스 파트1 따라읽기</title>
+<style>
+:root{--bg:#10141a;--card:#1a2029;--fg:#eef2f6;--mut:#94a3b8;--acc:#4f9cf9;--ok:#34c38f;--bad:#f46a6a;--warn:#f1b44c}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif;-webkit-tap-highlight-color:transparent}
+main{max-width:560px;margin:0 auto;padding:18px 16px 40px}
+h1{font-size:20px;margin:4px 0 2px}
+.sub{color:var(--mut);font-size:13px;margin-bottom:14px}
+.card{background:var(--card);border-radius:14px;padding:14px;margin-bottom:12px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+button{font:inherit;border:0;border-radius:12px;padding:12px 14px;background:#2a3340;color:var(--fg)}
+button.big{width:100%;padding:22px;font-size:22px;font-weight:700;background:var(--acc);color:#fff;border-radius:16px}
+button.stop{background:var(--bad)}
+.day{flex:1;text-align:center;font-weight:600}
+.ptype{color:var(--acc);font-size:13px;font-weight:600;margin-bottom:4px}
+.ptext{font-size:15px;line-height:1.55;color:#cbd5e1}
+.ptext .cur{background:#2c4a6e;color:#fff;border-radius:4px}
+.ptext .done{color:#64748b}
+#status{font-size:18px;font-weight:600;min-height:28px}
+#heard{color:var(--mut);font-size:15px;min-height:22px;margin-top:6px}
+#fb{margin-top:8px;font-size:15px;line-height:1.5}
+.ok{color:var(--ok)}.bad{color:var(--bad)}.warn{color:var(--warn)}
+.meter{height:10px;background:#0b0f14;border-radius:5px;overflow:hidden;margin-top:10px}
+.meter>div{height:100%;width:0;background:var(--ok);transition:width .05s}
+label{font-size:14px;color:var(--mut)}
+select,textarea{font:inherit;background:#0b0f14;color:var(--fg);border:1px solid #2a3340;border-radius:10px;padding:8px}
+textarea{width:100%;min-height:90px}
+details summary{color:var(--mut);font-size:14px;cursor:pointer}
+#log{font-size:13px;color:var(--mut);line-height:1.6;margin-top:6px}
+.pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#2a3340;font-size:12px;margin-right:4px}
+</style>
+</head>
+<body>
+<main>
+  <h1>토스 파트1 따라읽기</h1>
+  <div class="sub">시작을 누른 뒤에는 화면을 보지 않아도 소리로만 진행돼요.</div>
+
+  <div class="card">
+    <div class="row">
+      <button id="prevDay">◀</button>
+      <div class="day" id="dayLabel"></div>
+      <button id="nextDay">▶</button>
+    </div>
+  </div>
+
+  <button class="big" id="startBtn">▶ 시작</button>
+
+  <div class="card" style="margin-top:12px">
+    <div id="status">대기 중</div>
+    <div class="meter"><div id="lvl"></div></div>
+    <div id="heard"></div>
+    <div id="fb"></div>
+  </div>
+
+  <div class="card" id="passageBox"></div>
+
+  <div class="card">
+    <details>
+      <summary>설정</summary>
+      <div style="margin-top:10px" class="row">
+        <label>읽어주는 속도</label>
+        <select id="rate"><option value="0.8">느리게</option><option value="0.9" selected>보통</option><option value="1.0">실전</option></select>
+        <label>문장당 최대 시도</label>
+        <select id="maxTry"><option>2</option><option selected>3</option><option>4</option><option>5</option></select>
+      </div>
+      <div style="margin-top:10px" class="row">
+        <label><input type="checkbox" id="intoOn" checked> 억양도 확인</label>
+      </div>
+      <div style="margin-top:12px">
+        <label>직접 붙여넣은 지문 (비워 두면 오늘 지문 사용)</label>
+        <textarea id="custom" placeholder="아침에 받은 파트1 지문을 붙여넣을 수 있어요"></textarea>
+      </div>
+    </details>
+  </div>
+
+  <div class="card">
+    <details open>
+      <summary>오늘 기록</summary>
+      <div id="log">아직 없음</div>
+    </details>
+  </div>
+  <div class="sub">음성 명령: 따라 읽는 대신 영어로 <b>"next"</b> 라고 하면 다음 문장, <b>"stop"</b> 이라고 하면 종료.</div>
+</main>
+<script src="passages.js"></script>
+<script src="core.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+let dayOffset=0, running=false, stopFlag=false, wakeLock=null;
+let audioCtx=null, stream=null, analyser=null, buf=null, sampler=null, frames=[], t0=0, pitchMode='concurrent';
+const hardWords={}; const logLines=[];
+
+function seoulToday(){ return new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'})); }
+function dayIndex(){ const s=new Date(START_DATE+'T00:00:00'); const d=seoulToday(); d.setHours(0,0,0,0); return Math.round((d-s)/86400000)+dayOffset; }
+function todaysPassages(){
+  const c=$('custom').value.trim();
+  if(c) return c.split(/\n\s*\n/).map((t,i)=>({type:'붙여넣은 지문 '+(i+1),text:t.replace(/\s+/g,' ').trim()})).filter(p=>p.text);
+  const n=PASSAGES.length, k=((dayIndex()*2)%n+n)%n;
+  return [PASSAGES[k], PASSAGES[(k+1)%n]];
+}
+function renderDay(){
+  const d=seoulToday(); d.setDate(d.getDate()+dayOffset);
+  $('dayLabel').textContent=(dayOffset===0?'오늘 ':'')+(d.getMonth()+1)+'월 '+d.getDate()+'일 지문';
+  renderPassages();
+}
+function renderPassages(active){
+  const ps=todaysPassages();
+  $('passageBox').innerHTML=ps.map((p,pi)=>{
+    const ss=Core.splitSentences(p.text);
+    return `<div style="margin-bottom:10px"><div class="ptype">지문 ${pi+1} · ${p.type}</div><div class="ptext">`+
+      ss.map((s,si)=>{ let cls=''; if(active){ if(pi<active.p||(pi===active.p&&si<active.s)) cls='done'; else if(pi===active.p&&si===active.s) cls='cur'; }
+        return `<span class="${cls}">${s}</span>`; }).join(' ')+`</div></div>`;
+  }).join('');
+}
+$('prevDay').onclick=()=>{ if(!running){dayOffset--;renderDay();} };
+$('nextDay').onclick=()=>{ if(!running){dayOffset++;renderDay();} };
+$('custom').oninput=()=>renderPassages();
+
+// ---------- speech output ----------
+let voices=[];
+function loadVoices(){ voices=speechSynthesis.getVoices(); }
+loadVoices(); speechSynthesis.onvoiceschanged=loadVoices;
+function pickVoice(lang){
+  const L=voices.filter(v=>v.lang&&v.lang.replace('_','-').toLowerCase().startsWith(lang));
+  return L.find(v=>/google/i.test(v.name))||L[0]||null;
+}
+function say(text,lang='ko',rate){
+  return new Promise(res=>{
+    if(stopFlag) return res();
+    const u=new SpeechSynthesisUtterance(text);
+    u.lang= lang==='en'?'en-US':'ko-KR'; const v=pickVoice(lang==='en'?'en-us':'ko'); if(v) u.voice=v;
+    u.rate= rate || (lang==='en'? parseFloat($('rate').value) : 1.05);
+    let done=false; const fin=()=>{ if(!done){done=true;res();} };
+    u.onend=fin; u.onerror=fin; setTimeout(fin, 2000+text.length*160);
+    speechSynthesis.speak(u);
+  });
+}
+// mixed: [['ko','...'],['en','word']]
+async function sayParts(parts){ for(const [l,t] of parts){ if(stopFlag) return; await say(t,l, l==='en'?0.8:undefined); } }
+function beep(f=880,d=0.12){
+  try{ const o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.frequency.value=f; g.gain.value=0.15;
+    o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime+d); }catch(e){}
+  return new Promise(r=>setTimeout(r,d*1000+60));
+}
+
+// ---------- mic / pitch ----------
+async function openMic(){
+  if(stream) return true;
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});
+    const src=audioCtx.createMediaStreamSource(stream);
+    analyser=audioCtx.createAnalyser(); analyser.fftSize=2048; src.connect(analyser);
+    buf=new Float32Array(analyser.fftSize); return true;
+  }catch(e){ stream=null; return false; }
+}
+function closeMic(){ if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; analyser=null; } }
+function detectPitch(b,sr){
+  let rms=0; for(let i=0;i<b.length;i++) rms+=b[i]*b[i]; rms=Math.sqrt(rms/b.length);
+  if(rms<0.008) return {rms,f0:0};
+  const minL=Math.floor(sr/400), maxL=Math.floor(sr/75); const N=b.length-maxL;
+  let best=-1,bestL=0; const corr=new Float32Array(maxL+1);
+  for(let L=minL;L<=maxL;L++){ let s=0,e1=0,e2=0; for(let i=0;i<N;i+=2){ s+=b[i]*b[i+L]; e1+=b[i]*b[i]; e2+=b[i+L]*b[i+L]; }
+    const c=s/Math.sqrt(e1*e2+1e-9); corr[L]=c; if(c>best){best=c;bestL=L;} }
+  if(best<0.5) return {rms,f0:0};
+  // prefer the first strong peak (avoid octave errors)
+  for(let L=minL;L<bestL;L++){ if(corr[L]>best*0.9 && corr[L]>=corr[L-1] && corr[L]>=corr[L+1]){ bestL=L; break; } }
+  return {rms, f0: sr/bestL};
+}
+function startSampling(){
+  frames=[]; t0=performance.now();
+  sampler=setInterval(()=>{
+    if(!analyser) return;
+    analyser.getFloatTimeDomainData(buf);
+    const p=detectPitch(buf,audioCtx.sampleRate);
+    frames.push({t:(performance.now()-t0)/1000, rms:p.rms, f0:p.f0});
+    $('lvl').style.width=Math.min(100,p.rms*900)+'%';
+  },20);
+}
+function stopSampling(){ clearInterval(sampler); sampler=null; $('lvl').style.width='0%'; return frames.slice(); }
+
+// ---------- listening ----------
+function recognizeOnce(){
+  return new Promise(res=>{
+    if(!SR){ res({text:'',err:'no-sr'}); return; }
+    const r=new SR(); r.lang='en-US'; r.interimResults=true; r.maxAlternatives=1; r.continuous=false;
+    let finalText='', interim='', settled=false, err=null;
+    const fin=()=>{ if(!settled){ settled=true; clearTimeout(to); try{r.abort();}catch(e){} res({text:(finalText||interim).trim(),err}); } };
+    r.onresult=e=>{ interim=''; for(let i=e.resultIndex;i<e.results.length;i++){ const t=e.results[i][0].transcript; if(e.results[i].isFinal) finalText+=t+' '; else interim+=t; }
+      $('heard').textContent='들린 말: '+(finalText+interim); };
+    r.onerror=e=>{ err=e.error; }; r.onend=fin;
+    const to=setTimeout(()=>{ try{r.stop();}catch(e){} setTimeout(fin,800); },20000);
+    try{ r.start(); }catch(e){ err='start'; fin(); }
+  });
+}
+// pitch-only pass: wait for speech then end after 1.3 s of silence
+function capturePitchOnly(){
+  return new Promise(res=>{
+    startSampling(); let heard=false, silent=0;
+    const iv=setInterval(()=>{
+      const f=frames[frames.length-1]; if(!f) return;
+      if(f.rms>0.02){ heard=true; silent=0; } else if(heard){ silent+=0.1; }
+      const el=(performance.now()-t0)/1000;
+      if((heard&&silent>=1.3)||el>20||stopFlag){ clearInterval(iv); res(stopSampling()); }
+    },100);
+  });
+}
+async function listen(){
+  const wantPitch=$('intoOn').checked;
+  if(!wantPitch){ closeMic(); const r=await recognizeOnce(); return {...r,frames:null}; }
+  if(pitchMode==='concurrent'){
+    if(!await openMic()) pitchMode='sequential';
+    else{
+      startSampling(); const r=await recognizeOnce(); const fr=stopSampling();
+      const maxR=Math.max(0,...fr.map(f=>f.rms));
+      if(r.err==='audio-capture'){ pitchMode='sequential'; closeMic(); return {...r,frames:null,retry:true}; }
+      if(r.text && maxR<0.004){ pitchMode='sequential'; closeMic(); return {...r,frames:null}; }
+      return {...r,frames:fr};
+    }
+  }
+  closeMic(); const r=await recognizeOnce(); return {...r,frames:null};
+}
+
+// ---------- practice loop ----------
+function addLog(html){ logLines.unshift(html); $('log').innerHTML=logLines.slice(0,40).join('<br>'); }
+async function practiceSentence(sentence,pi,si){
+  const maxTry=parseInt($('maxTry').value); let noHear=0;
+  for(let attempt=1; attempt<=maxTry && !stopFlag; attempt++){
+    renderPassages({p:pi,s:si});
+    $('status').textContent=`지문 ${pi+1} · 문장 ${si+1} · ${attempt}번째`; $('fb').innerHTML='';
+    await say(sentence,'en'); if(stopFlag) return;
+    await beep(); $('heard').textContent='듣는 중…';
+    let r=await listen(); if(stopFlag) return;
+    if(r.retry){ r=await listen(); }
+    const cmd=(r.text||'').toLowerCase().trim();
+    if(/^(next|skip)\b/.test(cmd)) { await say('다음 문장으로 갈게요'); return; }
+    if(/^stop\b/.test(cmd)) { stopFlag=true; return; }
+    if(!r.text){
+      if(r.err==='not-allowed'||r.err==='no-sr'){ await say('마이크 권한이 없어서 들을 수 없어요. 크롬에서 마이크를 허용해 주세요'); stopFlag=true; return; }
+      $('fb').innerHTML='<span class="warn">못 들었어요</span>'; noHear++;
+      if(noHear>=2){ await say('소리가 안 들려서 다음 문장으로 갈게요'); return; }
+      await say('잘 못 들었어요. 다시 해 볼게요'); attempt--; continue;
+    }
+    // words
+    const diffs=Core.align(Core.tokenize(sentence),Core.tokenize(r.text));
+    const wordMsgs=[]; const spoken=[];
+    for(const d of diffs.slice(0,2)){
+      const exp=d.exp.join(' '), got=d.got.join(' ');
+      if(exp){ hardWords[exp]=(hardWords[exp]||0)+1; }
+      if(exp && got){ const tip=Core.soundTip(d.exp.join(''),d.got.join(''));
+        wordMsgs.push(`<b>${exp}</b> → ${got}`); spoken.push(['en',exp],['ko', '가 '],['en',got],['ko','처럼 들렸어요. '+(tip?tip+'.':'')]); }
+      else if(exp){ wordMsgs.push(`<b>${exp}</b> 빠짐`); spoken.push(['en',exp],['ko','를 빠뜨렸어요.']); }
+      else { wordMsgs.push(`추가로 들림: ${got}`); }
+    }
+    const wordsOk = diffs.filter(d=>d.exp.length).length===0;
+    // intonation
+    let into={endOk:null,msgs:[]};
+    if($('intoOn').checked){
+      let fr=r.frames;
+      if(!fr && wordsOk){ // sequential mode: separate pitch pass
+        await say('단어는 좋아요. 이번엔 억양만 볼게요. 한 번 더 읽어 주세요');
+        if(await openMic()){ await beep(); fr=await capturePitchOnly(); }
+      }
+      if(fr) into=Core.judgeIntonation(sentence,Core.analyzePitch(fr));
+    }
+    const intoOk = into.endOk!==false;
+    const html=[];
+    html.push(wordsOk?'<span class="ok">✔ 단어 정확</span>':'<span class="bad">✘ '+wordMsgs.join(', ')+'</span>');
+    if(into.endOk===true) html.push('<span class="ok">✔ 끝 억양 좋음</span>');
+    if(into.msgs.length) html.push('<span class="warn">'+into.msgs.join(' / ')+'</span>');
+    $('fb').innerHTML=html.join('<br>');
+    if(wordsOk && intoOk){
+      addLog(`<span class="pill">${pi+1}-${si+1}</span><span class="ok">${attempt}번 만에 통과</span>`);
+      await say(into.msgs.length? '단어 좋아요. '+into.msgs[0] : '좋아요'); return;
+    }
+    if(!wordsOk){ await sayParts(spoken.slice(0,8)); for(const d of diffs.filter(d=>d.exp.length).slice(0,2)) await say(d.exp.join(' '),'en',0.7); }
+    if(!intoOk) await say(into.msgs[0]);
+    if(attempt<maxTry) await say('다시 들어 보세요');
+    else { addLog(`<span class="pill">${pi+1}-${si+1}</span><span class="bad">넘어감: ${wordMsgs.join(', ')||into.msgs[0]||''}</span>`);
+      await say('이 문장은 저녁에 녹음으로 다시 봐요. 다음 문장으로 갈게요'); }
+  }
+}
+async function run(){
+  running=true; stopFlag=false; $('startBtn').textContent='■ 그만'; $('startBtn').classList.add('stop');
+  audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)(); await audioCtx.resume();
+  try{ wakeLock=await navigator.wakeLock.request('screen'); }catch(e){}
+  if(!SR){ await say('이 브라우저는 음성 인식을 지원하지 않아요. 크롬으로 열어 주세요'); return finish(); }
+  if($('intoOn').checked && !await openMic()) { await say('마이크를 허용해 주세요'); }
+  const ps=todaysPassages();
+  await say(`좋아요 치윤님. 오늘 지문은 ${ps.map(p=>p.type.replace(/\s*\(.*\)/,'')).join(', 그리고 ')}이에요. 한 문장씩 불러 드릴게요. 삐 소리가 나면 따라 읽어 주세요`);
+  for(let pi=0; pi<ps.length && !stopFlag; pi++){
+    const ss=Core.splitSentences(ps[pi].text);
+    await say(`지문 ${pi+1}, ${ps[pi].type.replace(/\s*\(.*\)/,'')}입니다`);
+    for(let si=0; si<ss.length && !stopFlag; si++) await practiceSentence(ss[si],pi,si);
+    if(stopFlag) break;
+    await say('지문 하나 끝났어요. 이제 전체를 한 번 이어서 들려 드릴게요. 듣고 나서 삐 소리가 나면 처음부터 끝까지 읽어 주세요');
+    await say(ps[pi].text,'en'); await beep();
+    $('status').textContent=`지문 ${pi+1} 전체 읽기`; $('heard').textContent='듣는 중…';
+    const whole=await listenLong(); if(stopFlag) break;
+    const diffs=Core.align(Core.tokenize(ps[pi].text),Core.tokenize(whole));
+    const miss=diffs.filter(d=>d.exp.length).map(d=>d.exp.join(' '));
+    addLog(`<span class="pill">지문${pi+1} 전체</span>${miss.length?'<span class="warn">흐린 단어: '+miss.slice(0,6).join(', ')+'</span>':'<span class="ok">단어 모두 인식됨</span>'}`);
+    await say(miss.length? `전체 읽기에서 ${miss.length}군데가 흐렸어요.` : '전체 읽기 좋았어요.');
+  }
+  const top=Object.entries(hardWords).sort((a,b)=>b[1]-a[1]).slice(0,3).map(x=>x[0]);
+  if(top.length){ await say('오늘 자주 틀린 단어는'); for(const w of top) await say(w,'en',0.75); await say('이에요. 수고하셨어요 치윤님'); }
+  else await say('오늘 따라읽기 끝이에요. 수고하셨어요 치윤님');
+  if(top.length) addLog('<b>오늘 약점:</b> '+top.join(', '));
+  finish();
+}
+// whole-passage read: keep restarting recognition until 2.5 s with no new words or 60 s
+async function listenLong(){
+  closeMic(); let all=''; const start=performance.now();
+  while(!stopFlag && performance.now()-start<60000){
+    const r=await recognizeOnce(); if(!r.text){ if(all) break; else continue; }
+    all+=' '+r.text; if(/\b(stop)$/i.test(r.text.trim())){ stopFlag=true; break; }
+  }
+  return all.trim();
+}
+function finish(){
+  running=false; speechSynthesis.cancel(); closeMic(); clearInterval(sampler);
+  try{ wakeLock&&wakeLock.release(); }catch(e){} wakeLock=null;
+  $('startBtn').textContent='▶ 시작'; $('startBtn').classList.remove('stop'); $('status').textContent='끝'; renderPassages();
+}
+$('startBtn').onclick=()=>{ if(running){ stopFlag=true; speechSynthesis.cancel(); $('status').textContent='멈추는 중…'; } else run().catch(e=>{ $('fb').textContent='오류: '+e.message; finish(); }); };
+document.addEventListener('visibilitychange',async()=>{ if(running&&document.visibilityState==='visible'){ try{ wakeLock=await navigator.wakeLock.request('screen'); }catch(e){} } });
+renderDay();
+</script>
+</body>
+</html>
