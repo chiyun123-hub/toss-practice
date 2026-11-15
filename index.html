@@ -44,7 +44,7 @@ details summary{color:var(--mut);font-size:14px;cursor:pointer}
 <div id="tapAll">화면 아무 곳이나<br>한 번 눌러 주세요<small>휴대폰이 자동 소리 재생을 막았어요</small></div>
 <main>
   <h1>치윤 쉐도잉 · 토스 파트1</h1>
-  <div class="sub">버전 8 · 시작을 누른 뒤에는 화면을 보지 않아도 소리로만 진행돼요.</div>
+  <div class="sub">버전 9 · 시작을 누른 뒤에는 화면을 보지 않아도 소리로만 진행돼요.</div>
 
   <div class="card">
     <div class="row">
@@ -108,8 +108,8 @@ try{
   const el=document.getElementById('asrInfo'); if(el) el.textContent='음성인식 준비 완료 (한 번 읽으면 단어+억양 동시 평가)';
 }catch(e){ window.asrState='failed'; const el=document.getElementById('asrInfo'); if(el) el.textContent='음성인식 모델을 못 받았어요. 크롬 음성인식으로 진행해요 (억양은 한 번 더 읽기)'; console.error(e); }
 </script>
-<script src="passages.js?v=8"></script>
-<script src="core.js?v=8"></script>
+<script src="passages.js?v=9"></script>
+<script src="core.js?v=9"></script>
 <script>
 const $=id=>document.getElementById(id);
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
@@ -157,7 +157,7 @@ function say(text,lang='ko',rate){
     if(stopFlag) return res();
     const u=new SpeechSynthesisUtterance(text);
     u.lang= lang==='en'?'en-US':'ko-KR'; const v=pickVoice(lang==='en'?'en-us':'ko'); if(v) u.voice=v;
-    u.rate= rate || (lang==='en'? parseFloat($('rate').value) : 1.05);
+    u.volume=1; u.rate= rate || (lang==='en'? parseFloat($('rate').value) : 1.05);
     let done=false; const fin=()=>{ if(!done){done=true;res();} };
     u.onend=fin; u.onerror=fin; setTimeout(fin, 2000+text.length*160);
     speechSynthesis.speak(u);
@@ -175,7 +175,7 @@ function beep(f=880,d=0.12){
 async function openMic(){
   if(stream){ const t=stream.getAudioTracks()[0]; if(t && t.readyState==='live' && t.enabled && !t.muted) return true; closeMic(); }
   try{
-    stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:false,autoGainControl:true}});
+    stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
     micCtx=new (window.AudioContext||window.webkitAudioContext)(); await micCtx.resume();
     const src=micCtx.createMediaStreamSource(stream);
     analyser=micCtx.createAnalyser(); analyser.fftSize=2048; src.connect(analyser);
@@ -223,7 +223,7 @@ function captureUtterance(silenceEnd=1.2, maxSec=25, waitSec=7){
       const f=frames[frames.length-1]; if(!f) return;
       const el0=(performance.now()-t0)/1000;
       if(floor===null){ if(el0<0.4) return; const fs=frames.map(x=>x.rms).sort((a,b)=>a-b); floor=fs[Math.floor(fs.length/2)]||0.001; }
-      const thr=Math.max(0.006, floor*3); peak=Math.max(peak,f.rms); window._lastPeak=peak; window._lastThr=thr;
+      const thr=Math.max(0.003, floor*3); peak=Math.max(peak,f.rms); window._lastPeak=peak; window._lastThr=thr;
       if(f.rms>thr){ loud++; if(loud>=2) started=true; silent=0; } else { loud=0; if(started) silent+=0.1; }
       const el=(performance.now()-t0)/1000;
       if((started&&silent>=silenceEnd) || el>maxSec || (!started&&el>waitSec) || stopFlag){
@@ -238,6 +238,8 @@ function concat(chunks){ let n=0; for(const c of chunks) n+=c.length; const o=ne
 function to16k(x,sr){ if(sr===16000) return x; const r=sr/16000, n=Math.floor(x.length/r), o=new Float32Array(n);
   for(let i=0;i<n;i++){ const p=i*r, j=Math.floor(p), f=p-j; o[i]=x[j]*(1-f)+(x[j+1]||0)*f; } return o; }
 async function whisper(pcm16){
+  let pk=0; for(let i=0;i<pcm16.length;i++){ const a=Math.abs(pcm16[i]); if(a>pk) pk=a; }
+  if(pk>0 && pk<0.9){ const g=Math.min(20,0.9/pk); for(let i=0;i<pcm16.length;i++) pcm16[i]*=g; }
   const out=await window.asrPipe(pcm16,{chunk_length_s:30,stride_length_s:5});
   return (Array.isArray(out)?out.map(o=>o.text).join(' '):out.text||'').replace(/\[.*?\]|\(.*?\)/g,'').trim();
 }
@@ -277,7 +279,7 @@ function capturePitchOnly(){
     startSampling(); let heard=false, silent=0;
     const iv=setInterval(()=>{
       const f=frames[frames.length-1]; if(!f) return;
-      if(f.rms>0.02){ heard=true; silent=0; } else if(heard){ silent+=0.1; }
+      if(f.rms>0.01){ heard=true; silent=0; } else if(heard){ silent+=0.1; }
       const el=(performance.now()-t0)/1000;
       if((heard&&silent>=1.3)||el>20||stopFlag){ clearInterval(iv); res(stopSampling()); }
     },100);
