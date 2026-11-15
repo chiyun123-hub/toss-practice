@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#10141a">
+<link rel="icon" href="icon-192.png">
 <title>토스 파트1 따라읽기</title>
 <style>
 :root{--bg:#10141a;--card:#1a2029;--fg:#eef2f6;--mut:#94a3b8;--acc:#4f9cf9;--ok:#34c38f;--bad:#f46a6a;--warn:#f1b44c}
@@ -33,9 +36,12 @@ textarea{width:100%;min-height:90px}
 details summary{color:var(--mut);font-size:14px;cursor:pointer}
 #log{font-size:13px;color:var(--mut);line-height:1.6;margin-top:6px}
 .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#2a3340;font-size:12px;margin-right:4px}
+#tapAll{position:fixed;inset:0;background:rgba(16,20,26,.96);display:none;align-items:center;justify-content:center;flex-direction:column;z-index:9;font-size:30px;font-weight:800;color:#fff;text-align:center}
+#tapAll small{font-size:16px;color:#94a3b8;font-weight:400;margin-top:12px}
 </style>
 </head>
 <body>
+<div id="tapAll">화면 아무 곳이나<br>한 번 눌러 주세요<small>휴대폰이 자동 소리 재생을 막았어요</small></div>
 <main>
   <h1>토스 파트1 따라읽기</h1>
   <div class="sub">시작을 누른 뒤에는 화면을 보지 않아도 소리로만 진행돼요.</div>
@@ -329,6 +335,23 @@ function finish(){
 $('startBtn').onclick=()=>{ if(running){ stopFlag=true; speechSynthesis.cancel(); $('status').textContent='멈추는 중…'; } else run().catch(e=>{ $('fb').textContent='오류: '+e.message; finish(); }); };
 document.addEventListener('visibilitychange',async()=>{ if(running&&document.visibilityState==='visible'){ try{ wakeLock=await navigator.wakeLock.request('screen'); }catch(e){} } });
 renderDay();
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+// auto start (?auto=1 or installed app): browsers may block sound until one tap
+(async function autoStart(){
+  if(!/[?&]auto=1/.test(location.search)) return;
+  audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+  try{ await Promise.race([audioCtx.resume(), new Promise(r=>setTimeout(r,800))]); }catch(e){}
+  const tapStart=()=>{ $('tapAll').style.display='none'; if(!running) run().catch(e=>{ $('fb').textContent='오류: '+e.message; finish(); }); };
+  if(audioCtx.state==='running'){
+    // probe speech: if blocked, ask for one tap
+    let blocked=false; const u=new SpeechSynthesisUtterance('시작할게요'); u.lang='ko-KR';
+    const ok=await new Promise(res=>{ u.onstart=()=>res(true); u.onerror=e=>res(false); setTimeout(()=>res(false),2500); speechSynthesis.speak(u); });
+    if(ok){ setTimeout(tapStart,900); return; }
+    speechSynthesis.cancel();
+  }
+  $('tapAll').style.display='flex';
+  $('tapAll').addEventListener('click',async()=>{ await audioCtx.resume(); tapStart(); },{once:true});
+})();
 </script>
 </body>
 </html>
