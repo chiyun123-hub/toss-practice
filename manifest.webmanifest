@@ -1,6 +1,6 @@
 {
-  "name": "토스 파트1 따라읽기",
-  "short_name": "토스따라읽기",
+  "name": "토익 스피킹 연습",
+  "short_name": "토익 스피킹 연습",
   "start_url": "./?auto=1",
   "scope": "./",
   "display": "standalone",
