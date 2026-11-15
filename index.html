@@ -55,6 +55,7 @@ details summary{color:var(--mut);font-size:14px;cursor:pointer}
   </div>
 
   <button class="big" id="startBtn">▶ 시작</button>
+  <button id="micTest" style="width:100%;margin-top:8px">🎤 마이크 시험 (아무 영어나 말해 보세요)</button>
 
   <div class="card" style="margin-top:12px">
     <div id="status">대기 중</div>
@@ -336,6 +337,15 @@ function finish(){
 }
 $('startBtn').onclick=()=>{ if(running){ stopFlag=true; speechSynthesis.cancel(); $('status').textContent='멈추는 중…'; } else run().catch(e=>{ $('fb').textContent='오류: '+e.message; finish(); }); };
 document.addEventListener('visibilitychange',async()=>{ if(running&&document.visibilityState==='visible'){ try{ wakeLock=await navigator.wakeLock.request('screen'); }catch(e){} } });
+$('micTest').onclick=async()=>{
+  if(running) return; closeMic();
+  $('status').textContent='마이크 시험: 영어로 한 문장 말해 보세요'; $('heard').textContent='듣는 중…'; $('fb').textContent='';
+  const ua=navigator.userAgent.match(/Chrome\/[\d]+/);
+  const r=await recognizeOnce();
+  $('status').textContent= r.text ? '마이크 정상' : '못 들음';
+  $('fb').innerHTML= (r.text? '<span class="ok">들린 말: '+r.text+'</span>' : '<span class="bad">아무것도 못 들었어요</span>')+
+    '<br>오류 코드: '+(r.err||'없음')+' · 음성인식 지원: '+(SR?'예':'아니오')+' · '+(ua?ua[0]:'');
+};
 renderDay();
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
 // auto start (?auto=1 or installed app): browsers may block sound until one tap
