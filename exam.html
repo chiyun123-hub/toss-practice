@@ -56,6 +56,13 @@ ul.links li{margin:5px 0;line-height:1.45}
 .doc td.c0{white-space:nowrap;font-weight:600}
 .fb ul{margin:4px 0 6px;padding-left:18px} .fb li{margin:2px 0}
 .fbh{display:flex;gap:8px;align-items:center;margin-bottom:4px} .fbs{margin-left:auto;background:#24364d;color:#bfdbfe;border-radius:999px;padding:2px 10px;font-size:13px;font-weight:700}
+.tabs{flex-wrap:wrap} .tabs button{padding:9px 6px;font-size:14px;min-width:60px}
+button.say{padding:3px 8px;font-size:14px;margin-left:4px;background:#24364d;border-radius:8px}
+.ndate{font-weight:800;margin:14px 0 6px} .nq{color:var(--acc);font-weight:700;margin:10px 0 4px}
+.note{position:relative;padding:12px} .note .said{color:#fca5a5;text-decoration:line-through;text-decoration-thickness:1px;line-height:1.5;padding-right:44px}
+.note .why{color:var(--mut);font-size:13.5px;margin:6px 0;line-height:1.5} .note .fixd{color:#86efac;font-weight:700;line-height:1.6}
+.ntag{position:absolute;right:10px;top:10px;font-size:11px;background:#3b2a4a;color:#e9d5ff;border-radius:999px;padding:1px 8px} .ntag.pr{background:#4a3412;color:#fde68a} .ntag.ex{background:#12384a;color:#bae6fd}
+.gd ul{margin:6px 0;padding-left:18px} .gd li{margin:3px 0;line-height:1.5} .gex{background:#0f1720;border-left:3px solid var(--ok);padding:6px 10px;border-radius:6px;margin-top:6px;line-height:1.5}
 .fbq{background:#f8fafc;color:#0f172a;border-radius:6px;padding:8px 10px;line-height:1.55;font-size:14.5px}
 .fbk{color:var(--acc);font-size:12px;font-weight:700;margin-top:8px}
 .fbscript{background:#0f1720;border-left:3px solid var(--acc);padding:8px 10px;border-radius:6px;line-height:1.6;font-size:14.5px}
@@ -67,7 +74,7 @@ ul.links li{margin:5px 0;line-height:1.45}
   <div class="row"><a href="./">← 따라읽기·표현 앱으로</a></div>
   <h1>실전 연습 & 자료 모음</h1>
   <div class="sub">실제 시험과 같은 준비·답변 시간으로 연습하고, 녹음을 Claude 대화에 바로 공유하세요.</div>
-  <div class="tabs"><button id="tabP" class="on">⏱ 실전 연습</button><button id="tabA">📝 답안지</button><button id="tabR">📚 자료 모음</button></div>
+  <div class="tabs"><button id="tabP" class="on">⏱ 실전</button><button id="tabA">📝 답안지</button><button id="tabN">❌ 오답노트</button><button id="tabG">📘 파트4</button><button id="tabR">📚 자료</button></div>
 
   <!-- PRACTICE -->
   <section id="secP">
@@ -107,6 +114,8 @@ ul.links li{margin:5px 0;line-height:1.45}
     <div class="card"><div class="row" style="display:flex;gap:8px;align-items:center"><label class="sub">모의고사 날짜</label><select id="fbDate" style="flex:1;font:inherit;background:#0b0f14;color:var(--fg);border:1px solid #2a3340;border-radius:10px;padding:8px"></select></div></div>
     <div id="fbBody"></div>
   </section>
+  <section id="secN" class="hide"><div class="card sub">내가 실제로 말한 문장 → 왜 틀렸는지 → 고친 문장. 🔊 보통 속도 · 🐢 천천히. 고친 문장을 듣고 <b>따라 말하기</b>까지 하세요.</div><div id="noteBody"></div></section>
+  <section id="secG" class="hide"><div class="card sub">파트4 표 보고 답하기 — 상황별로 표를 문장으로 바꾸는 법. 예문은 🔊로 듣고 따라 말하세요.</div><div id="guideBody"></div></section>
   <section id="secR" class="hide">
     <div class="card" style="border:1px solid #4f9cf9">
       <h2>🆕 2026년 자료 (최신순)</h2>
@@ -199,10 +208,11 @@ ul.links li{margin:5px 0;line-height:1.45}
 </main>
 <script src="passages.js?v=14"></script>
 <script src="practice.js?v=14"></script>
-<script src="feedback.js?v=26"></script>
+<script src="feedback.js?v=30"></script>
+<script src="grammar.js?v=30"></script>
 <script>
 const $=id=>document.getElementById(id);
-const EXAM_VER=29;
+const EXAM_VER=30;
 (function(){ try{ fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{
   if(j && j.v>EXAM_VER && sessionStorage.getItem('examReloadedFor')!==String(j.v) && !running){
     sessionStorage.setItem('examReloadedFor',String(j.v)); location.replace(location.pathname+'?r='+Date.now()+location.hash); } }).catch(()=>{}); }catch(e){} })();
@@ -213,9 +223,9 @@ function dayIdx(){ const s=new Date(START+'T00:00:00'), d=seoul(); d.setHours(0,
 function dayN(){ return (Math.max(0,dayIdx())%14)%13; } // Day14 -> Day1 review
 function renderDay(){ const i=dayIdx(); const dn=Math.max(0,i)%14+1; $('dLabel').textContent= 'Day '+dn+(dn===14?' (Day 1 복습)':'')+(i<0?' (미리보기)':'')+(dOff===0?' · 오늘':''); }
 $('dPrev').onclick=()=>{ if(!running){dOff--;renderDay();} }; $('dNext').onclick=()=>{ if(!running){dOff++;renderDay();} };
-function showTab(k){ ['P','A','R'].forEach(x=>{ $('sec'+x).classList.toggle('hide',x!==k); $('tab'+x).classList.toggle('on',x===k); }); if(k==='A') renderFB(); }
-$('tabP').onclick=()=>showTab('P'); $('tabA').onclick=()=>showTab('A'); $('tabR').onclick=()=>showTab('R');
-if(location.hash==='#resources') showTab('R'); if(location.hash==='#answers') setTimeout(()=>showTab('A'),0);
+function showTab(k){ ['P','A','N','G','R'].forEach(x=>{ $('sec'+x).classList.toggle('hide',x!==k); $('tab'+x).classList.toggle('on',x===k); }); if(k==='A') renderFB(); if(k==='N') renderNotes(); if(k==='G') renderGuide(); }
+$('tabP').onclick=()=>showTab('P'); $('tabA').onclick=()=>showTab('A'); $('tabR').onclick=()=>showTab('R'); $('tabN').onclick=()=>showTab('N'); $('tabG').onclick=()=>showTab('G');
+if(location.hash==='#resources') showTab('R'); if(location.hash==='#answers') setTimeout(()=>showTab('A'),0); if(location.hash==='#notes') setTimeout(()=>showTab('N'),0); if(location.hash==='#part4') setTimeout(()=>showTab('G'),0);
 
 // ---------- audio helpers ----------
 let voices=[]; function lv(){ voices=speechSynthesis.getVoices(); } lv(); speechSynthesis.onvoiceschanged=lv;
@@ -480,6 +490,32 @@ function promptsFor(date){
   for(let i=0;i<3;i++){ P[5+i]=p3.ctx+' — '+p3.q[i]; P[8+i]=d4.q[i]+(i===2?' (두 번 들려줌)':''); }
   return {P, table:P4_TABLES[d4.t]};
 }
+// ---------- 🔊 발음 듣기 ----------
+function speakEN(t,slow){ try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(t); u.lang='en-US';
+  const v=speechSynthesis.getVoices().filter(x=>/^en[-_]US/i.test(x.lang)); const g=v.find(x=>/google|natural|aria|jenny|samantha/i.test(x.name))||v[0]; if(g) u.voice=g;
+  u.rate=slow?0.7:0.95; speechSynthesis.speak(u); }catch(e){} }
+function sayBtns(t){ const a=encodeURIComponent(t); return `<button class="say" data-t="${a}">🔊</button><button class="say" data-t="${a}" data-slow="1">🐢</button>`; }
+document.addEventListener('click',e=>{ const b=e.target.closest('button.say'); if(b){ speakEN(decodeURIComponent(b.dataset.t), !!b.dataset.slow); } });
+// ---------- ❌ 오답노트 ----------
+function renderNotes(){
+  const F=(typeof FEEDBACK!=='undefined')?FEEDBACK:{}; let h='';
+  for(const d of Object.keys(F).sort().reverse()){ const ns=F[d].notes||[]; if(!ns.length) continue;
+    h+=`<div class="ndate">${d} · ${esc(F[d].title||'')} · ${ns.length}개</div>`;
+    let lastQ=null;
+    for(const n of ns){
+      if(n.q!==lastQ){ h+=`<div class="nq">Q${n.q} <span class="sub">${PART_OF(n.q)}</span></div>`; lastQ=n.q; }
+      h+=`<div class="card note"><span class="ntag ${n.type==='발음'?'pr':n.type==='표현'?'ex':''}">${esc(n.type)}</span>
+        <div class="said">✘ ${esc(n.said)}</div>
+        <div class="why">💡 ${esc(n.why)}</div>
+        <div class="fixd">✔ ${esc(n.fix)} ${sayBtns(n.fix)}</div></div>`;
+    } }
+  $('noteBody').innerHTML=h||'<div class="card sub">아직 오답이 없어요.</div>';
+}
+// ---------- 📘 파트4 가이드 ----------
+function renderGuide(){
+  if(typeof P4GUIDE==='undefined'){ $('guideBody').innerHTML='<div class="card sub">가이드를 불러오지 못했어요.</div>'; return; }
+  $('guideBody').innerHTML=P4GUIDE.map(g=>`<div class="card gd"><b>${esc(g.t)}</b><ul>${g.tips.map(t=>`<li>${esc(t)}</li>`).join('')}</ul>${g.ex.map(x=>`<div class="gex">${esc(x)} ${sayBtns(x)}</div>`).join('')}</div>`).join('');
+}
 function renderFB(){
   const F=(typeof FEEDBACK!=='undefined')?FEEDBACK:{}; const dates=Object.keys(F).sort().reverse(); const sel=$('fbDate');
   if(!dates.length){ $('fbBody').innerHTML='<div class="card sub">아직 채점된 모의고사가 없어요.</div>'; return; }
@@ -492,7 +528,7 @@ function renderFB(){
     h+=`<div class="card fb"><div class="fbh"><b>Q${q}</b> <span class="sub">${PART_OF(q)}</span><span class="fbs">${esc(x.score)}</span></div>
       <div class="fbk">문제</div><div class="fbq">${esc(PQ[q]||'')}</div>
       <div class="fbk">고칠 점</div><ul>${x.fix.map(t=>`<li>${esc(t)}</li>`).join('')}</ul>
-      <div class="fbk">대본 (AH · 구조 참고용, 통째 암기 ✘)</div><div class="fbscript">${esc(x.script)}</div>
+      <div class="fbk">대본 (AH · 구조 참고용, 통째 암기 ✘) ${sayBtns(x.script.replace(/[↗↘\/]/g,'').replace(/\(.*?\)/g,''))}</div><div class="fbscript">${esc(x.script)}</div>
       <div class="fbk">암기 단어</div><div>${x.words.map(w=>`<span class="tag" style="font-size:13px;color:var(--fg)">${esc(w)}</span>`).join(' ')}</div>
       <div class="fbk">문법 요점</div><div>${esc(x.grammar)}</div></div>`; }
   if(f.words&&f.words.length) h+=`<div class="card"><b>🚗 출퇴근 드릴에 추가된 암기 단어 (+${f.words.length})</b><div class="sub" style="margin-top:6px;line-height:1.7">${f.words.map(w=>esc(w[0])+' — '+esc(w[1].split('|')[0])).join('<br>')}</div></div>`;
