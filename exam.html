@@ -232,7 +232,7 @@ async function findPhotos(q){
   if(photoCache[q]) return photoCache[q];
   let list=[];
   try{ // Openverse (Flickr 등 무료 사진)
-    const j=await fetchJSON('https://api.openverse.org/v1/images/?q='+encodeURIComponent(q)+'&page_size=30&aspect_ratio=wide&category=photograph&mature=false');
+    const j=await fetchJSON('https://api.openverse.org/v1/images/?q='+encodeURIComponent(q)+'&page_size=20&aspect_ratio=wide&category=photograph&mature=false');
     list=(j.results||[]).filter(r=>r.url && (!r.width||r.width>=600)).map(r=>({src:r.url, alt:r.thumbnail, credit:(r.title||'')+(r.creator?' · '+r.creator:'')}));
   }catch(e){}
   if(list.length<3){ try{ // Wikimedia Commons
