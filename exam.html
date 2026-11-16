@@ -35,6 +35,13 @@ th{background:#243042}
 ul.links{padding-left:18px;margin:6px 0}
 ul.links li{margin:5px 0;line-height:1.45}
 .tag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:999px;background:#2a3340;color:var(--mut);margin-left:4px}
+.pgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.pg{display:flex;flex-direction:column;gap:6px}
+.pg .ph{padding:7px 4px;font-size:12px;line-height:1.25;background:#243042;color:var(--mut);min-height:58px}
+.pg .ph small{display:block;color:var(--acc);margin-top:2px}
+.pg .qs{display:flex;flex-direction:column;gap:6px}
+.pg .qs button{padding:12px 0;font-size:20px;font-weight:800}
+@media (max-width:420px){ .pgrid{gap:4px} .pg .ph{font-size:11px} }
 .hide{display:none}
 </style>
 </head>
@@ -51,19 +58,21 @@ ul.links li{margin:5px 0;line-height:1.45}
       <div class="row" style="display:flex;gap:8px;align-items:center">
         <button id="dPrev">◀</button><div id="dLabel" style="flex:1;text-align:center;font-weight:700"></div><button id="dNext">▶</button>
       </div>
-      <div class="grid" style="margin-top:10px">
-        <button data-part="1">파트1<br><small>Q1–2 읽기</small></button>
-        <button data-part="2">파트2<br><small>Q3–4 사진</small></button>
-        <button data-part="3">파트3<br><small>Q5–7 질문</small></button>
-        <button data-part="4">파트4<br><small>Q8–10 표</small></button>
-        <button data-part="5">파트5<br><small>Q11 의견</small></button>
-        <button data-part="all" style="background:#3b2a4a">모의고사<br><small>Q1–11 전체</small></button>
+      <div id="qpick" style="margin-top:10px">
+        <div class="pgrid">
+          <div class="pg"><button class="ph" data-part="1">파트1 · 지문 읽기<small>파트 전체 ▶</small></button><div class="qs"><button data-q="1">1</button><button data-q="2">2</button></div></div>
+          <div class="pg"><button class="ph" data-part="2">파트2 · 사진 묘사<small>파트 전체 ▶</small></button><div class="qs"><button data-q="3">3</button><button data-q="4">4</button></div></div>
+          <div class="pg"><button class="ph" data-part="3">파트3 · 질문 답변<small>파트 전체 ▶</small></button><div class="qs"><button data-q="5">5</button><button data-q="6">6</button><button data-q="7">7</button></div></div>
+          <div class="pg"><button class="ph" data-part="4">파트4 · 표 보고 답하기<small>파트 전체 ▶</small></button><div class="qs"><button data-q="8">8</button><button data-q="9">9</button><button data-q="10">10</button></div></div>
+          <div class="pg"><button class="ph" data-part="5">파트5 · 의견 제시<small>파트 전체 ▶</small></button><div class="qs"><button data-q="11">11</button></div></div>
+        </div>
+        <button data-part="all" style="width:100%;margin-top:10px;background:#3b2a4a">🎯 모의고사 1~11번 전체</button>
       </div>
     </div>
     <div class="card">
       <div id="phase">대기 중</div>
       <div id="timer">--</div>
-      <div id="stage" class="sub">위에서 파트를 고르면 시작해요. 처음 한 번은 마이크 허용을 눌러 주세요.</div>
+      <div id="stage" class="sub">위에서 문제 번호(1~11)나 파트를 고르면 시작해요. 처음 한 번은 마이크 허용을 눌러 주세요.</div>
       <button id="stopBtn" class="hide" style="width:100%;margin-top:10px;background:var(--bad)">■ 그만</button>
     </div>
     <div class="card" id="recBox">
@@ -215,9 +224,9 @@ $('shareAll').onclick=()=>shareFiles(recs);
 function show(html){ $('stage').innerHTML=html; $('stage').classList.remove('sub'); }
 
 // ---------- parts ----------
-async function part1(){
+async function part1(only){
   const n=PASSAGES.length, k=((dayIdx()*2)%n+n)%n; const ps=[PASSAGES[k],PASSAGES[(k+1)%n]];
-  for(let i=0;i<2 && !stopFlag;i++){
+  for(let i=0;i<2 && !stopFlag;i++){ if(only && only!==i+1) continue;
     show(`<b>Question ${i+1} of 11 · Read a text aloud</b><p>${ps[i].text}</p>`);
     await countdown(45,'PREPARATION TIME','prep'); if(stopFlag) return;
     await respond(45,`Q${i+1}`);
@@ -264,12 +273,12 @@ async function savePhoto(p,name,topic){ // 녹음과 같이 공유되도록 사�
        recs.push({name:name+'.jpg', blob:b, img:true}); }
   catch(e){ recs.push({name:name+'.txt', blob:new Blob([`Q 사진 주제: ${topic}\n사진 주소: ${p.src}\n`],{type:'text/plain'}), img:true}); }
   renderRecs(); }
-async function part2(){
+async function part2(only){
   const sc=P2_SCENES[dayN()];
-  show('<b>Questions 3–4 · Describe a picture</b><p class="sub">사진 불러오는 중…</p>');
-  const pre=[pickPhoto(sc[0]), pickPhoto(sc[1])]; // 두 장 미리 받아 두기
+  show('<b>Describe a picture</b><p class="sub">사진 불러오는 중…</p>');
+  const pre=[only&&only!==3?null:pickPhoto(sc[0]), only&&only!==4?null:pickPhoto(sc[1])]; // 미리 받아 두기
   for(let i=0;i<2 && !stopFlag;i++){
-    const q=i+3; let p=await pre[i];
+    const q=i+3; if(only && only!==q) continue; let p=await pre[i];
     const head=`<b>Question ${q} of 11 · Describe a picture</b>`;
     const draw=()=>{ show(head+photoHTML(p,sc[i])); bindFull(); };
     draw();
@@ -286,11 +295,11 @@ async function part2(){
     await respond(30,`Q${q}`);
   }
 }
-async function part3(){
+async function part3(only){
   const s=P3_SETS[dayN()]; const times=[15,15,30];
   show(`<b>Questions 5–7 · Respond to questions</b><p>${s.ctx} You have agreed to participate in a telephone interview.</p>`);
   await say(`Imagine that ${s.ctx.charAt(0).toLowerCase()+s.ctx.slice(1)} You have agreed to participate in a telephone interview.`);
-  for(let i=0;i<3 && !stopFlag;i++){
+  for(let i=0;i<3 && !stopFlag;i++){ if(only && only!==i+5) continue;
     show(`<b>Question ${i+5} of 11</b><p>${s.ctx}</p><p style="font-size:18px">${s.q[i]}</p>`);
     await say(s.q[i]); if(stopFlag) return;
     await countdown(3,'PREPARATION TIME','prep'); if(stopFlag) return;
@@ -298,12 +307,12 @@ async function part3(){
   }
 }
 function tableHTML(t){ return `<b>${t.title}</b><div class="sub">${t.info}</div><table><tr>${t.head.map(h=>`<th>${h}</th>`).join('')}</tr>${t.rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</table>`; }
-async function part4(){
+async function part4(only){
   const d=P4_DAYS[dayN()], t=P4_TABLES[d.t]; const times=[15,15,30];
   show(`<b>Questions 8–10 · Respond using information provided</b>${tableHTML(t)}<p class="sub">질문은 화면에 안 나오고 소리로만 나와요.</p>`);
   await say('Hi, I am calling to ask some questions. Could you help me?');
   await countdown(45,'READING TIME','prep'); if(stopFlag) return;
-  for(let i=0;i<3 && !stopFlag;i++){
+  for(let i=0;i<3 && !stopFlag;i++){ if(only && only!==i+8) continue;
     $('phase').textContent=`Question ${i+8} · 듣기`; await say(d.q[i]); if(i===2){ await new Promise(r=>setTimeout(r,800)); await say(d.q[i]); }
     if(stopFlag) return; await countdown(3,'PREPARATION TIME','prep'); if(stopFlag) return;
     await respond(times[i],`Q${i+8}`);
@@ -319,13 +328,14 @@ async function part5(which){
     await respond(60,`Q11-${k+1}`);
   }
 }
-async function run(part){
+async function run(part,q){
   if(running) return; running=true; stopFlag=false; $('stopBtn').classList.remove('hide');
   ctx=ctx||new (window.AudioContext||window.webkitAudioContext)(); await Promise.race([ctx.resume(), new Promise(r=>setTimeout(r,1500))]);
   if(!await openMic()){ show('마이크를 허용해 주세요. (설정 → 애플리케이션 → 치윤 쉐도잉/Chrome → 권한 → 마이크)'); return end(); }
   try{ wakeLock=await Promise.race([navigator.wakeLock.request('screen'), new Promise(r=>setTimeout(()=>r(null),1500))]); }catch(e){}
   try{
-    if(part==='1') await part1(); else if(part==='2') await part2(); else if(part==='3') await part3();
+    if(q){ q=+q; if(q<=2) await part1(q); else if(q<=4) await part2(q); else if(q<=7) await part3(q); else if(q<=10) await part4(q); else await part5(0); }
+    else if(part==='1') await part1(); else if(part==='2') await part2(); else if(part==='3') await part3();
     else if(part==='4') await part4(); else if(part==='5') await part5();
     else { await part1(); if(!stopFlag) await part2(); if(!stopFlag) await part3(); if(!stopFlag) await part4(); if(!stopFlag) await part5(0); }
   }catch(e){ show('오류: '+e.message); }
@@ -335,6 +345,7 @@ function end(done){ running=false; $('stopBtn').classList.add('hide'); speechSyn
   $('phase').textContent= done? '끝! 아래 녹음을 Claude에게 공유하세요':'멈춤'; $('phase').className=''; }
 $('stopBtn').onclick=()=>{ stopFlag=true; speechSynthesis.cancel(); };
 document.querySelectorAll('[data-part]').forEach(b=>b.onclick=()=>run(b.dataset.part));
+document.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>run(null,b.dataset.q));
 renderDay();
 </script>
 </body>
