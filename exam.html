@@ -192,7 +192,7 @@ ul.links li{margin:5px 0;line-height:1.45}
 <script src="practice.js?v=14"></script>
 <script>
 const $=id=>document.getElementById(id);
-const EXAM_VER=24;
+const EXAM_VER=25;
 (function(){ try{ fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{
   if(j && j.v>EXAM_VER && sessionStorage.getItem('examReloadedFor')!==String(j.v) && !running){
     sessionStorage.setItem('examReloadedFor',String(j.v)); location.replace(location.pathname+'?r='+Date.now()+location.hash); } }).catch(()=>{}); }catch(e){} })();
@@ -260,7 +260,7 @@ async function prepFiles(list){ $('shareMsg').textContent='공유용 파일 만�
 const IS_MOBILE=/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints>1 && /Macintosh/.test(navigator.userAgent));
 // 컴퓨터: 구글 드라이브 "토스 공부/모의고사 녹음" 폴더를 한 번 고르면 기억해 두고,
 // 저장할 때마다 그날 일차 폴더(01일차_11.15(일)_진단 모의고사 …)에 자동 저장. (크롬·엣지)
-const DAY_FOLDERS=['01일차_11.15(일)_진단 모의고사','02일차_11.16(월)_파트5','03일차_11.17(화)_파트4','04일차_11.18(수)_파트3','05일차_11.19(목)_파트2','06일차_11.20(금)_파트5','07일차_11.21(토)_모의고사1','08일차_11.22(일)_파트4+5','09일차_11.23(월)_파트1+2','10일차_11.24(화)_파트3+5','11일차_11.25(수)_모의고사2','12일차_11.26(목)_약점 파트','13일차_11.27(금)_모의고사3','14일차_11.28(토)_가볍게 정리'];
+const DAY_FOLDERS=['01일차_11.16(월)_파트5','02일차_11.17(화)_파트4','03일차_11.18(수)_파트3','04일차_11.19(목)_파트2','05일차_11.20(금)_파트5','06일차_11.21(토)_모의고사1','07일차_11.22(일)_파트4+5','08일차_11.23(월)_파트1+2','09일차_11.24(화)_파트3+5','10일차_11.25(수)_모의고사2','11일차_11.26(목)_약점 파트','12일차_11.27(금)_모의고사3','13일차_11.28(토)_가볍게 정리']; // 1일차 = 11/16(월)
 const ROOT_NAME='모의고사 녹음';
 async function getRoot(){ try{ const db=await idb(); return await new Promise(ok=>{ const q=db.transaction('r').objectStore('r').get('root'); q.onsuccess=()=>ok(q.result||null); q.onerror=()=>ok(null); }); }catch(e){ return null; } }
 async function setRoot(h){ try{ const db=await idb(); db.transaction('r','readwrite').objectStore('r').put(h,'root'); }catch(e){} }
@@ -270,7 +270,8 @@ async function pickRoot(){
   if(h.name!==ROOT_NAME && !confirm(`고른 폴더는 「${h.name}」이에요. 「${ROOT_NAME}」 폴더가 아닌데 여기에 저장할까요?`)) throw {name:'AbortError'};
   await setRoot(h); return h;
 }
-function dayFolderFor(name){ const m=/^Day(\d+)_/.exec(name); const n=m?+m[1]:dayNo(); return DAY_FOLDERS[Math.min(14,Math.max(1,n))-1]; }
+// 파일 이름의 Day n(계획 기준, Day1=11/15) → 날짜 기준 폴더 (11/16 = 01일차). 11/15 녹음은 01일차로.
+function dayFolderFor(name){ const m=/^Day(\d+)_/.exec(name); const n=m?+m[1]:dayNo(); return DAY_FOLDERS[Math.min(13,Math.max(1,n-1))-1]; }
 async function saveFiles(list){
   const files=await prepFiles(list);
   if(window.showDirectoryPicker){
