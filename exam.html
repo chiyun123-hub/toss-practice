@@ -78,7 +78,7 @@ ul.links li{margin:5px 0;line-height:1.45}
           <div class="pg"><button class="ph" data-part="4">파트4<br>표 보고 답<small>파트 전체 ▶</small></button><div class="qs"><button data-q="8">8</button><button data-q="9">9</button><button data-q="10">10</button></div></div>
           <div class="pg"><button class="ph" data-part="5">파트5<br>의견 제시<small>파트 전체 ▶</small></button><div class="qs"><button data-q="11">11</button></div></div>
         </div>
-        <button data-part="all" style="width:100%;margin-top:10px;background:#3b2a4a">🎯 모의고사 1~11번 전체</button>
+        <button data-part="all" style="width:100%;margin-top:10px;background:#3b2a4a">🎯 모의고사 1~11번 전체 (시작하면 끝까지 자동 · 약 20분)</button>
       </div>
     </div>
     <div class="card">
@@ -192,6 +192,10 @@ ul.links li{margin:5px 0;line-height:1.45}
 <script src="practice.js?v=14"></script>
 <script>
 const $=id=>document.getElementById(id);
+const EXAM_VER=24;
+(function(){ try{ fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{
+  if(j && j.v>EXAM_VER && sessionStorage.getItem('examReloadedFor')!==String(j.v) && !running){
+    sessionStorage.setItem('examReloadedFor',String(j.v)); location.replace(location.pathname+'?r='+Date.now()+location.hash); } }).catch(()=>{}); }catch(e){} })();
 const START='2026-11-15';
 let dOff=0, stopFlag=false, running=false, stream=null, recs=[], ctx=null, wakeLock=null;
 function seoul(){ return new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'})); }
@@ -442,7 +446,7 @@ async function run(part,q){
     if(q){ q=+q; if(q<=2) await part1(q); else if(q<=4) await part2(q); else if(q<=7) await part3(q); else if(q<=10) await part4(q); else await part5(0); }
     else if(part==='1') await part1(); else if(part==='2') await part2(); else if(part==='3') await part3();
     else if(part==='4') await part4(); else if(part==='5') await part5();
-    else { await say('TOEIC Speaking test. Questions 1 through 11.'); await part1(); if(!stopFlag) await part2(); if(!stopFlag) await part3(); if(!stopFlag) await part4(); if(!stopFlag) await part5(0); }
+    else { await say('TOEIC Speaking test. Questions 1 through 11.'); await part1(); if(!stopFlag) await part2(); if(!stopFlag) await part3(); if(!stopFlag) await part4(); if(!stopFlag) await part5(0); if(!stopFlag){ show(head('','End of the Test')+'<div class="dirs">This is the end of the Speaking test.<br><br>수고하셨어요 치윤님! 아래 녹음을 Claude에게 보내 주세요.</div>'); await say('This is the end of the Speaking test.'); } }
   }catch(e){ show('오류: '+e.message); }
   end(!stopFlag);
 }
