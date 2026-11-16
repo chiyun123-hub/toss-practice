@@ -76,7 +76,7 @@ ul.links li{margin:5px 0;line-height:1.45}
       <button id="stopBtn" class="hide" style="width:100%;margin-top:10px;background:var(--bad)">■ 그만</button>
     </div>
     <div class="card" id="recBox">
-      <b>녹음한 답변</b> <span class="sub">— 공유 버튼으로 Claude 앱의 오늘 대화에 보내면 피드백을 받아요.</span>
+      <b>녹음한 답변</b> <span class="sub">— 휴대폰: 📤 공유로 Claude 앱에 보내기 · 컴퓨터: 💾 저장 후 Claude 창에 끌어다 놓기</span>
       <div id="recs" class="sub" style="margin-top:6px">아직 없음</div>
       <button id="shareAll" class="hide" style="width:100%;margin-top:8px">📤 전부 공유</button>
       <button id="saveAll" class="hide" style="width:100%;margin-top:8px">💾 전부 휴대폰에 저장 (공유가 안 될 때)</button>
@@ -214,9 +214,10 @@ async function respond(sec,label){
 function renderRecs(){
   if(!recs.length){ $('recs').textContent='아직 없음'; ['shareAll','saveAll','clearRecs'].forEach(k=>$(k).classList.add('hide')); return; }
   $('recs').innerHTML=''; recs.forEach((r,i)=>{ const d=document.createElement('div'); d.className='rec';
-    const url=URL.createObjectURL(r.blob); d.innerHTML=`<b style="min-width:120px">${r.name}</b><button data-i="${i}">📤 공유</button>`+(r.img? (r.blob.type.startsWith('image')?`<img src="${url}" style="width:100%;border-radius:8px">`:'') : `<audio controls src="${url}"></audio>`);
+    const url=URL.createObjectURL(r.blob); d.innerHTML=`<b style="min-width:120px">${r.name}</b><button data-i="${i}">${IS_MOBILE?'📤 공유':'💾 저장'}</button>`+(r.img? (r.blob.type.startsWith('image')?`<img src="${url}" style="width:100%;border-radius:8px">`:'') : `<audio controls src="${url}"></audio>`);
     d.querySelector('button').onclick=()=>{ const ph=recs.find(x=>x.img && x.name.startsWith(r.name.replace(/\.\w+$/,'')+'_사진')); shareFiles(ph&&!r.img?[ph,r]:[r]); }; $('recs').appendChild(d); });
   ['shareAll','saveAll','clearRecs'].forEach(k=>$(k).classList.remove('hide'));
+  if(!IS_MOBILE){ $('shareAll').textContent='💾 전부 저장 → Claude 창에 끌어다 놓기'; $('saveAll').classList.add('hide'); }
 }
 // ---- 녹음 보관 (페이지를 닫거나 새로고침해도 남게) ----
 function idb(){ return new Promise((ok,no)=>{ const r=indexedDB.open('toss-recs',1); r.onupgradeneeded=()=>r.result.createObjectStore('r'); r.onsuccess=()=>ok(r.result); r.onerror=()=>no(r.error); }); }
@@ -238,8 +239,23 @@ async function toShareFile(r){
 }
 function downloadAll(list){ list.forEach((r,i)=>setTimeout(()=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(r.blob); a.download=r.name; document.body.appendChild(a); a.click(); a.remove(); },i*700)); }
 async function prepFiles(list){ $('shareMsg').textContent='공유용 파일 만드는 중…'; const files=[]; for(const r of list) files.push(await toShareFile(r)); return files; }
+const IS_MOBILE=/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints>1 && /Macintosh/.test(navigator.userAgent));
+// 컴퓨터: 폴더를 한 번 고르면 녹음·사진을 그 폴더에 한꺼번에 저장 (크롬·엣지). 안 되면 다운로드 폴더로.
+async function saveFiles(list){
+  const files=await prepFiles(list);
+  if(window.showDirectoryPicker){
+    try{
+      const dir=await window.showDirectoryPicker({id:'toss-recs', mode:'readwrite', startIn:'downloads'});
+      for(const f of files){ const h=await dir.getFileHandle(f.name,{create:true}); const w=await h.createWritable(); await w.write(f); await w.close(); }
+      $('shareMsg').innerHTML='✅ 고른 폴더에 '+files.length+'개 저장했어요 → 그 폴더에서 파일을 전부 선택해 <b>Claude 대화창에 끌어다 놓으세요</b>.'; return;
+    }catch(e){ if(e && e.name==='AbortError'){ $('shareMsg').textContent='저장을 취소했어요.'; return; } }
+  }
+  downloadAll(files.map(f=>({name:f.name,blob:f})));
+  $('shareMsg').innerHTML='다운로드 폴더에 저장했어요 (크롬이 "여러 파일 다운로드"를 물으면 <b>허용</b>) → 파일을 <b>Claude 대화창에 끌어다 놓으세요</b>.';
+}
 let prepared=null;
 async function shareFiles(list){
+  if(!IS_MOBILE) return saveFiles(list);
   // 공유는 버튼을 누른 직후에만 허용돼서, 파일 변환이 오래 걸리면 한 번 더 누르게 함
   if(!prepared || prepared.key!==list.map(r=>r.name).join('|')){
     const t0=performance.now(); const files=await prepFiles(list); prepared={key:list.map(r=>r.name).join('|'), files};
@@ -259,7 +275,7 @@ async function shareFiles(list){
   downloadAll(files.map(f=>({name:f.name, blob:f})));
 }
 $('shareAll').onclick=()=>shareFiles(recs);
-$('saveAll').onclick=async()=>{ const files=await prepFiles(recs); downloadAll(files.map(f=>({name:f.name,blob:f}))); $('shareMsg').innerHTML='다운로드 폴더에 저장했어요 → Claude 대화의 <b>+ → 파일 → 다운로드</b>에서 올려 주세요.'; };
+$('saveAll').onclick=async()=>{ if(!IS_MOBILE) return saveFiles(recs); const files=await prepFiles(recs); downloadAll(files.map(f=>({name:f.name,blob:f}))); $('shareMsg').innerHTML='다운로드 폴더에 저장했어요 → Claude 대화의 <b>+ → 파일 → 다운로드</b>에서 올려 주세요.'; };
 $('clearRecs').onclick=()=>{ if(running) return; recs=[]; prepared=null; saveRecs(); renderRecs(); $('shareMsg').textContent='녹음 목록을 비웠어요.'; };
 function show(html){ $('stage').innerHTML=html; $('stage').classList.remove('sub'); }
 
@@ -387,6 +403,8 @@ $('stopBtn').onclick=()=>{ stopFlag=true; speechSynthesis.cancel(); };
 document.querySelectorAll('[data-part]').forEach(b=>b.onclick=()=>run(b.dataset.part));
 document.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>run(null,b.dataset.q));
 renderDay(); loadRecs();
+document.addEventListener('keydown',e=>{ if(e.key==='Escape' && running){ $('stopBtn').click(); }
+  if((e.key===' '||e.key==='Enter') && running){ const b=document.querySelector('#stage button.big'); if(b && document.activeElement!==b){ e.preventDefault(); b.click(); } } });
 </script>
 </body>
 </html>
