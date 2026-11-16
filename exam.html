@@ -224,12 +224,53 @@ async function part1(){
   }
 }
 function waitTap(btnText){ return new Promise(r=>{ const b=document.createElement('button'); b.className='big'; b.style.marginTop='10px'; b.textContent=btnText; b.onclick=()=>{b.remove();r();}; $('stage').appendChild(b); const iv=setInterval(()=>{ if(stopFlag){clearInterval(iv); b.remove(); r();} },300); b.addEventListener('click',()=>clearInterval(iv)); }); }
+// ---------- part2 photos: load straight into the page ----------
+const photoCache={};
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+async function fetchJSON(u,ms=8000){ const c=new AbortController(); const t=setTimeout(()=>c.abort(),ms); try{ const r=await fetch(u,{signal:c.signal}); if(!r.ok) throw 0; return await r.json(); } finally{ clearTimeout(t); } }
+async function findPhotos(q){
+  if(photoCache[q]) return photoCache[q];
+  let list=[];
+  try{ // Openverse (Flickr 등 무료 사진)
+    const j=await fetchJSON('https://api.openverse.org/v1/images/?q='+encodeURIComponent(q)+'&page_size=30&aspect_ratio=wide&category=photograph&mature=false');
+    list=(j.results||[]).filter(r=>r.url && (!r.width||r.width>=600)).map(r=>({src:r.url, alt:r.thumbnail, credit:(r.title||'')+(r.creator?' · '+r.creator:'')}));
+  }catch(e){}
+  if(list.length<3){ try{ // Wikimedia Commons
+    const j=await fetchJSON('https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrnamespace=6&gsrlimit=30&gsrsearch='+encodeURIComponent(q+' filetype:bitmap')+'&prop=imageinfo&iiprop=url|mime|size&iiurlwidth=1200');
+    const pg=Object.values((j.query&&j.query.pages)||{});
+    list=list.concat(pg.map(p=>p.imageinfo&&p.imageinfo[0]).filter(i=>i&&/jpeg/.test(i.mime)&&i.width>i.height).map(i=>({src:i.thumburl||i.url, alt:i.url, credit:'Wikimedia Commons'})));
+  }catch(e){} }
+  return photoCache[q]=shuffle(list);
+}
+function loadImg(src){ return new Promise((ok,no)=>{ const im=new Image(); im.onload=()=>ok(im); im.onerror=no; im.referrerPolicy='no-referrer'; im.src=src; setTimeout(()=>no('timeout'),12000); }); }
+async function pickPhoto(q,skip=0){
+  const list=await findPhotos(q);
+  for(let k=skip;k<list.length;k++){ try{ await loadImg(list[k].src); return {...list[k], idx:k}; }catch(e){ if(list[k].alt){ try{ await loadImg(list[k].alt); return {...list[k], src:list[k].alt, idx:k}; }catch(e2){} } } }
+  return null;
+}
+function photoHTML(p,q){
+  const fb='https://www.pexels.com/search/'+encodeURIComponent(q)+'/';
+  if(!p) return `<p class="sub">사진을 불러오지 못했어요 (인터넷 확인). <a href="${fb}" target="_blank">여기를 눌러 사진 열기</a></p>`;
+  return `<img id="p2img" src="${p.src}" referrerpolicy="no-referrer" alt="${q}" style="width:100%;max-height:62vh;object-fit:contain;border-radius:10px;background:#000;display:block;margin:6px 0"><div class="sub" style="font-size:11px">사진: ${p.credit.replace(/</g,'&lt;')} · 탭하면 전체화면</div>`;
+}
+function bindFull(){ const im=$('p2img'); if(im) im.onclick=()=>{ try{ (im.requestFullscreen||im.webkitRequestFullscreen).call(im); }catch(e){} }; }
 async function part2(){
   const sc=P2_SCENES[dayN()];
+  show('<b>Questions 3–4 · Describe a picture</b><p class="sub">사진 불러오는 중…</p>');
+  const pre=[pickPhoto(sc[0]), pickPhoto(sc[1])]; // 두 장 미리 받아 두기
   for(let i=0;i<2 && !stopFlag;i++){
-    const q=i+3, url='https://www.pexels.com/search/'+encodeURIComponent(sc[i])+'/';
-    show(`<b>Question ${q} of 11 · Describe a picture</b><p>사진 주제: <b>${sc[i]}</b></p><p><a href="${url}" target="_blank">① 여기를 눌러 사진 하나를 크게 열어 두세요</a> (화면 분할하거나, 다른 기기로 열어도 좋아요)</p>`);
-    await waitTap('② 사진 준비됐어요 → 시작'); if(stopFlag) return;
+    const q=i+3; let p=await pre[i];
+    const head=`<b>Question ${q} of 11 · Describe a picture</b>`;
+    const draw=()=>{ show(head+photoHTML(p,sc[i])); bindFull(); };
+    draw();
+    // 시작 전에만 다른 사진으로 바꿀 수 있어요
+    let started=false;
+    const sw=document.createElement('button'); sw.textContent='🔄 다른 사진'; sw.style.marginTop='8px';
+    sw.onclick=async()=>{ if(started) return; sw.disabled=true; const n=await pickPhoto(sc[i],(p?p.idx:-1)+1); if(n) p=n; draw(); $('stage').appendChild(sw); $('stage').appendChild(go); sw.disabled=false; };
+    const go=document.createElement('button'); go.className='big'; go.style.marginTop='10px'; go.textContent='▶ 시작 (준비 45초)';
+    $('stage').appendChild(sw); $('stage').appendChild(go);
+    await new Promise(r=>{ go.onclick=r; const iv=setInterval(()=>{ if(stopFlag){clearInterval(iv); r();} },300); });
+    started=true; sw.remove(); go.remove(); if(stopFlag) return;
     await countdown(45,'PREPARATION TIME','prep'); if(stopFlag) return;
     await respond(30,`Q${q}`);
   }
