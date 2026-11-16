@@ -224,7 +224,7 @@ button.say{padding:3px 8px;font-size:14px;margin-left:4px;background:#24364d;bor
 <script src="grammar.js?v=32"></script>
 <script>
 const $=id=>document.getElementById(id);
-const EXAM_VER=36;
+const EXAM_VER=37;
 (function(){ try{ fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{
   if(j && j.v>EXAM_VER && sessionStorage.getItem('examReloadedFor')!==String(j.v) && !running){
     sessionStorage.setItem('examReloadedFor',String(j.v)); location.replace(location.pathname+'?r='+Date.now()+location.hash); } }).catch(()=>{}); }catch(e){} })();
@@ -274,8 +274,8 @@ async function audioMetrics(blob, sec){
   const ac=new (window.OfflineAudioContext||window.webkitOfflineAudioContext)(1,16000,16000);
   const buf=await ac.decodeAudioData(await blob.arrayBuffer()); const x=buf.getChannelData(0), sr=buf.sampleRate, hop=Math.round(sr*0.02);
   const e=[]; for(let i=0;i+hop<=x.length;i+=hop){ let s2=0; for(let j=i;j<i+hop;j++) s2+=x[j]*x[j]; e.push(Math.sqrt(s2/hop)); }
-  if(!e.length) return null; const srt=e.slice().sort((a,b)=>a-b); const floor=srt[Math.floor(srt.length*0.2)], peak=srt[Math.floor(srt.length*0.98)];
-  const thr=Math.max(floor*2.5, peak*0.12, 0.004); const v=e.map(y=>y>thr);
+  if(!e.length) return null; const srt=e.slice().sort((a,b)=>a-b); const floor=srt[Math.floor(srt.length*0.05)], peak=srt[Math.floor(srt.length*0.98)];
+  const thr=Math.max(peak*0.12, Math.min(floor*3, peak*0.4), 0.004); // 거의 쉬지 않고 말해도 기준이 너무 높아지지 않게 const v=e.map(y=>y>thr);
   // 0.25초 이하 끊김은 말하는 중으로 봄
   let first=v.indexOf(true); if(first<0) return {dur:x.length/sr, speak:0, lead:x.length/sr, maxGap:0, tail:0, sec};
   let last=v.lastIndexOf(true), speak=0, gap=0, maxGap=0;
@@ -637,7 +637,7 @@ function rawScore(f){ let t=0; for(let q=1;q<=11;q++){ const sc=(f.q[q]&&f.q[q].
   if(!nums.length) continue; if(q<=2){ const a=(sc.match(/\d+/g)||[]).map(Number).filter(n=>n<=3); t+= a.length? a.reduce((x,y)=>x+y,0)/a.length : 0; } else t+= Math.min(q===11?5:3, nums[0]); } return Math.round(t*10)/10; }
 function scoreChart(F){
   const ds=Object.keys(F).sort(); if(!ds.length) return ''; const pts=ds.map(d=>({d, v:rawScore(F[d]), t:F[d].total}));
-  const W=560,H=170,L=34,R=12,T=14,B=28, x=i=>L+(ds.length===1?(W-L-R)/2:i*(W-L-R)/(ds.length-1)), y=v=>T+(1-v/35)*(H-T-B);
+  const W=560,H=170,L=34,R=12,T=14,B=28, x=i=>L+(ds.length===1?(W-L-R)/2:i*(W-L-R)/(ds.length-1)), y=v=>T+(1-(Math.max(15,Math.min(35,v))-15)/20)*(H-T-B);
   const band=(v,l,c)=>`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="${c}" stroke-dasharray="4 4"/><text x="${W-R}" y="${y(v)-3}" text-anchor="end" font-size="11" fill="${c}">${l}</text>`;
   return `<div class="card"><b>📈 점수 변화</b> <span class="sub">원점수 /35 (Q1~2 발음·억양 평균 + Q3~10 + Q11) · 등급선은 대략적인 기준</span>
   <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;margin-top:6px">
