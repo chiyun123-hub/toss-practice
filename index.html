@@ -44,7 +44,7 @@ details summary{color:var(--mut);font-size:14px;cursor:pointer}
 <div id="tapAll">화면 아무 곳이나<br>한 번 눌러 주세요<small>휴대폰이 자동 소리 재생을 막았어요</small></div>
 <main>
   <h1>치윤 쉐도잉 · 토스 파트1</h1>
-  <div class="sub">버전 19 · 시작을 누른 뒤에는 화면을 보지 않아도 소리로만 진행돼요.</div>
+  <div class="sub">버전 22 · 시작을 누른 뒤에는 화면을 보지 않아도 소리로만 진행돼요.</div>
 
   <div class="row" style="margin-bottom:10px">
     <button id="modeB" style="flex:2">🚗 출퇴근 표현</button>
@@ -102,7 +102,7 @@ details summary{color:var(--mut);font-size:14px;cursor:pointer}
 지문 읽기: 영어로 <b>"next"</b> 다음 문장, <b>"stop"</b> 종료.</div>
 </main>
 <script>
-const APP_VER=19;
+const APP_VER=22;
 (function(){
   try{
     fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{
@@ -597,6 +597,15 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js',{upda
   $('tapAll').style.display='flex';
   $('tapAll').addEventListener('click',async()=>{ await audioCtx.resume(); tapStart(); },{once:true});
 })();
+</script>
+
+<script>
+// 영어 음성이 없는 컴퓨터면 안내 (한국어 음성으로 영어를 읽어 버리는 문제 방지)
+setTimeout(()=>{ try{ const v=speechSynthesis.getVoices(); if(v.some(x=>/^en/i.test(x.lang))) return;
+  const d=document.createElement('div');
+  d.style.cssText='background:#4a3412;color:#fde68a;border-radius:12px;padding:10px 12px;margin:10px auto;max-width:620px;font-size:14px;line-height:1.5';
+  d.innerHTML='⚠️ 이 브라우저에 <b>영어 음성</b>이 없어서 영어 문제가 이상하게 읽힐 수 있어요.<br>· <b>크롬이나 엣지</b>로 이 주소를 열어 주세요 (구글/마이크로소프트 영어 음성이 들어 있어요)<br>· 또는 Windows <b>설정 → 시간 및 언어 → 음성 → 음성 추가</b>에서 영어(미국)를 추가하세요';
+  document.body.insertBefore(d, document.body.firstChild); }catch(e){} }, 2500);
 </script>
 </body>
 </html>
