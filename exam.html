@@ -216,7 +216,7 @@ button.say{padding:3px 8px;font-size:14px;margin-left:4px;background:#24364d;bor
 <script src="grammar.js?v=32"></script>
 <script>
 const $=id=>document.getElementById(id);
-const EXAM_VER=32;
+const EXAM_VER=33;
 (function(){ try{ fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{
   if(j && j.v>EXAM_VER && sessionStorage.getItem('examReloadedFor')!==String(j.v) && !running){
     sessionStorage.setItem('examReloadedFor',String(j.v)); location.replace(location.pathname+'?r='+Date.now()+location.hash); } }).catch(()=>{}); }catch(e){} })();
@@ -229,7 +229,7 @@ function renderDay(){ const i=dayIdx(); const dn=Math.max(0,i)%14+1; $('dLabel')
 $('dPrev').onclick=()=>{ if(!running){dOff--;renderDay();} }; $('dNext').onclick=()=>{ if(!running){dOff++;renderDay();} };
 function showTab(k){ ['P','A','N','G','R'].forEach(x=>{ $('sec'+x).classList.toggle('hide',x!==k); $('tab'+x).classList.toggle('on',x===k); }); if(k==='A') renderFB(); if(k==='N') renderNotes(); if(k==='G') renderGuide(); }
 $('tabP').onclick=()=>showTab('P'); $('tabA').onclick=()=>showTab('A'); $('tabR').onclick=()=>showTab('R'); $('tabN').onclick=()=>showTab('N'); $('tabG').onclick=()=>showTab('G');
-if(location.hash==='#resources') showTab('R'); if(location.hash==='#answers') setTimeout(()=>showTab('A'),0); if(location.hash==='#notes') setTimeout(()=>showTab('N'),0); if(/^#part[2-5]?$/.test(location.hash)){ const m=location.hash.match(/\d/); if(m) gPart=+m[0]; setTimeout(()=>showTab('G'),0); }
+if(location.hash==='#resources') showTab('R'); if(location.hash==='#answers') setTimeout(()=>showTab('A'),0); if(location.hash==='#notes') setTimeout(()=>showTab('N'),0); if(/^#part[2-5]?$/.test(location.hash)){ const m=location.hash.match(/\d/); setTimeout(()=>{ if(m) gPart=+m[0]; showTab('G'); },0); }
 
 // ---------- audio helpers ----------
 let voices=[]; function lv(){ voices=speechSynthesis.getVoices(); } lv(); speechSynthesis.onvoiceschanged=lv;
