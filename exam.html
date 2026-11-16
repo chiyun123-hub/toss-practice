@@ -213,10 +213,10 @@ button.say{padding:3px 8px;font-size:14px;margin-left:4px;background:#24364d;bor
 <script src="passages.js?v=14"></script>
 <script src="practice.js?v=14"></script>
 <script src="feedback.js?v=30"></script>
-<script src="grammar.js?v=31"></script>
+<script src="grammar.js?v=32"></script>
 <script>
 const $=id=>document.getElementById(id);
-const EXAM_VER=31;
+const EXAM_VER=32;
 (function(){ try{ fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{
   if(j && j.v>EXAM_VER && sessionStorage.getItem('examReloadedFor')!==String(j.v) && !running){
     sessionStorage.setItem('examReloadedFor',String(j.v)); location.replace(location.pathname+'?r='+Date.now()+location.hash); } }).catch(()=>{}); }catch(e){} })();
@@ -525,15 +525,15 @@ function renderGuide(){
   const cnt=weakParts();
   if(gPart===null){ gPart=+Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a])[0]||4; } // 처음엔 오답이 가장 많은 파트
   document.querySelectorAll('#pseg button').forEach(b=>{ const k=+b.dataset.g; b.classList.toggle('on',k===gPart); b.innerHTML=b.textContent.replace(/ ·\s*\d+$/,'')+(cnt[k]?` <span class="cnt">${cnt[k]}</span>`:''); b.onclick=()=>{ gPart=k; renderGuide(); }; });
-  const G=PGUIDE[gPart], ns=partNotes(gPart), blob=ns.map(n=>n.why+' '+n.fix+' '+n.said).join(' ');
+  const G=PGUIDE[gPart], ns=partNotes(gPart), blob=ns.map(n=>n.why).join(' ');
   const star=sec=>sec.keys&&sec.keys.some(k=>k&&blob.includes(k));
   const focus=G.sec.filter(star).map(x=>x.t.split(' ')[0].replace('.',''));
   let h=`<div class="card"><b>${esc(G.name)}</b></div>`;
   h+=`<div class="card weak"><b>🎯 내 약점 — 이 파트 오답 ${ns.length}개</b>`+
-     (ns.length? `<div class="sub" style="margin:4px 0 6px">⭐ 집중할 섹션: ${focus.length?focus.join(', ')+'번':'(아래 전체)'}</div>`+
+     (ns.length? `<div class="sub" style="margin:4px 0 6px">⭐ 내 실수와 관련된 섹션 ${focus.length}개를 위로 올렸어요: ${focus.length?focus.join(', ')+'번':'(아래 전체)'}</div>`+
        ns.map(n=>`<div class="wk"><span class="sub">${n.date.slice(5).replace('-','/')} Q${n.q}</span> <s>${esc(n.said)}</s><br>✔ <b>${esc(n.fix)}</b> ${sayBtns(n.fix)}<div class="sub">💡 ${esc(n.why)}</div></div>`).join('')
        : '<div class="sub" style="margin-top:4px">아직 이 파트 오답이 없어요. 모의고사를 채점하면 여기 모여요.</div>')+`</div>`;
-  h+=G.sec.map(g=>`<div class="card gd${star(g)?' star':''}">${star(g)?'<span class="ftag">⭐ 집중</span>':''}<b>${esc(g.t)}</b><ul>${g.tips.map(t=>`<li>${esc(t)}</li>`).join('')}</ul>${g.ex.map(x=>`<div class="gex">${esc(x)} ${sayBtns(x)}</div>`).join('')}</div>`).join('');
+  h+=[...G.sec.filter(star),...G.sec.filter(x=>!star(x))].map(g=>`<div class="card gd${star(g)?' star':''}">${star(g)?'<span class="ftag">⭐ 집중</span>':''}<b>${esc(g.t)}</b><ul>${g.tips.map(t=>`<li>${esc(t)}</li>`).join('')}</ul>${g.ex.map(x=>`<div class="gex">${esc(x)} ${sayBtns(x)}</div>`).join('')}</div>`).join('');
   $('guideBody').innerHTML=h;
 }
 function renderFB(){
