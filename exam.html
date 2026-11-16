@@ -202,8 +202,8 @@ async function respond(sec,label){
 function renderRecs(){
   if(!recs.length){ $('recs').textContent='아직 없음'; $('shareAll').classList.add('hide'); return; }
   $('recs').innerHTML=''; recs.forEach((r,i)=>{ const d=document.createElement('div'); d.className='rec';
-    const url=URL.createObjectURL(r.blob); d.innerHTML=`<b style="min-width:120px">${r.name}</b><button data-i="${i}">📤 공유</button><audio controls src="${url}"></audio>`;
-    d.querySelector('button').onclick=()=>shareFiles([r]); $('recs').appendChild(d); });
+    const url=URL.createObjectURL(r.blob); d.innerHTML=`<b style="min-width:120px">${r.name}</b><button data-i="${i}">📤 공유</button>`+(r.img? (r.blob.type.startsWith('image')?`<img src="${url}" style="width:100%;border-radius:8px">`:'') : `<audio controls src="${url}"></audio>`);
+    d.querySelector('button').onclick=()=>{ const ph=recs.find(x=>x.img && x.name.startsWith(r.name.replace(/\.\w+$/,'')+'_사진')); shareFiles(ph&&!r.img?[ph,r]:[r]); }; $('recs').appendChild(d); });
   $('shareAll').classList.remove('hide');
 }
 async function shareFiles(list){
@@ -259,6 +259,11 @@ function photoHTML(p,q){
   return `<img id="p2img" src="${p.src}" referrerpolicy="no-referrer" alt="${q}" style="width:100%;max-height:62vh;object-fit:contain;border-radius:10px;background:#000;display:block;margin:6px 0"><div class="sub" style="font-size:11px">사진: ${p.credit.replace(/</g,'&lt;')} · 탭하면 전체화면</div>`;
 }
 function bindFull(){ const im=$('p2img'); if(im) im.onclick=()=>{ try{ (im.requestFullscreen||im.webkitRequestFullscreen).call(im); }catch(e){} }; }
+async function savePhoto(p,name,topic){ // 녹음과 같이 공유되도록 사진 파일도 목록에 넣기
+  try{ const r=await fetch(p.src,{referrerPolicy:'no-referrer'}); const b=await r.blob(); if(!r.ok||!b.size) throw 0;
+       recs.push({name:name+'.jpg', blob:b, img:true}); }
+  catch(e){ recs.push({name:name+'.txt', blob:new Blob([`Q 사진 주제: ${topic}\n사진 주소: ${p.src}\n`],{type:'text/plain'}), img:true}); }
+  renderRecs(); }
 async function part2(){
   const sc=P2_SCENES[dayN()];
   show('<b>Questions 3–4 · Describe a picture</b><p class="sub">사진 불러오는 중…</p>');
@@ -276,6 +281,7 @@ async function part2(){
     $('stage').appendChild(sw); $('stage').appendChild(go);
     await new Promise(r=>{ go.onclick=r; const iv=setInterval(()=>{ if(stopFlag){clearInterval(iv); r();} },300); });
     started=true; sw.remove(); go.remove(); if(stopFlag) return;
+    if(p) savePhoto(p, `Day${dayN()+1}_Q${q}_사진`, sc[i]);
     await countdown(45,'PREPARATION TIME','prep'); if(stopFlag) return;
     await respond(30,`Q${q}`);
   }
