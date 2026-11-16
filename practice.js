@@ -6,7 +6,12 @@ const P2_SCENES = [
  ["hotel lobby front desk","bicycle riders city street"],["warehouse boxes forklift","kitchen cooking family"],
  ["concert stage audience","bus stop waiting people"],["hospital reception","bookstore customers shelves"],
  ["conference room laptops","beach umbrellas people"],["clothing store fitting room","farmers market fruits"],
- ["office meeting presentation","outdoor market stall"]
+ ["office meeting presentation","outdoor market stall"],
+// --- 2단계 (Day 15~21) ---
+ ["office presentation whiteboard","gym people exercising"],["bakery counter customer","airport gate passengers waiting"],
+ ["street food vendor","meeting room team laptops"],["garden people planting","bus passengers seats"],
+ ["museum visitors painting","pharmacy counter customer"],["car repair mechanic","picnic park family"],
+ ["laboratory scientists","coffee shop people laptops"]
 ];
 const P3_SETS = [
  {ctx:"A marketing firm is doing research about coffee shops.",q:["How often do you go to a coffee shop, and who do you usually go with?","What do you usually order at a coffee shop? Why?","Which would you prefer: a large franchise coffee shop or a small local cafe? Why?"]},
@@ -21,7 +26,15 @@ const P3_SETS = [
  {ctx:"A local newspaper is writing about restaurants in your area.",q:["How often do you eat out, and who do you usually eat with?","What kind of food do you enjoy the most? Why?","What is the most important thing when you choose a restaurant: taste, price, or atmosphere? Why?"]},
  {ctx:"A university is researching online classes.",q:["Have you ever taken an online class? What was it about?","What device do you usually use for online classes or meetings? Why?","Do you think online classes are as effective as classes in a classroom? Why or why not?"]},
  {ctx:"A company is researching how people use their free time after work.",q:["What time do you usually finish work or school, and what do you do after that?","Would you like to learn a new skill in your free time? What skill?","What would be the best way for a company to help employees reduce stress? Why?"]},
- {ctx:"A community center is researching how people use neighborhood parks.",q:["How often do you go to a park near your home?","What do you usually do when you go to a park?","What would make the parks in your neighborhood better? Why?"]}
+ {ctx:"A community center is researching how people use neighborhood parks.",q:["How often do you go to a park near your home?","What do you usually do when you go to a park?","What would make the parks in your neighborhood better? Why?"]},
+// --- 2단계 (Day 15~21) ---
+ {ctx:"A health magazine is doing research about sleep habits.",q:["How many hours do you usually sleep, and when do you go to bed?","What do you usually do when you can't fall asleep?","Do you think people today get less sleep than in the past? Why or why not?"]},
+ {ctx:"A company is doing research about online shopping and delivery.",q:["When was the last time you ordered food for delivery, and what did you order?","How do you usually decide which restaurant to order from?","Would you pay extra for faster delivery? Why or why not?"]},
+ {ctx:"A marketing firm is researching how people use their free time.",q:["What do you usually do on weekday evenings?","Who do you usually spend your free time with?","If you had one extra free day every week, how would you spend it? Why?"]},
+ {ctx:"A city is researching how residents use public libraries.",q:["When was the last time you visited a library?","What do you usually do at a library?","What would make more people visit public libraries? Why?"]},
+ {ctx:"A technology company is researching how people take photos.",q:["How often do you take photos, and what do you usually take pictures of?","Do you prefer to take photos with a smartphone or a camera? Why?","Do you think people post too many photos on social media? Why or why not?"]},
+ {ctx:"A travel company is researching vacation preferences.",q:["Where did you go on your last vacation, and who did you go with?","Do you prefer to plan your trip in detail or travel without a plan? Why?","What is the most important thing to consider when choosing a travel destination: cost, safety, or activities? Why?"]},
+ {ctx:"A research firm is studying how people learn new skills.",q:["What is a new skill you learned recently?","How long did it take you to learn it?","Which is better for learning a new skill: taking a class or teaching yourself online? Why?"]}
 ];
 const P4_TABLES = {
  A:{title:"Greenville Marketing Conference",info:"Date: Saturday, March 14 · Location: Riverside Hotel, Ballroom · Registration fee: $60 (members $40)",head:["Time","Session","Speaker"],rows:[["9:00–9:30 a.m.","Welcome Speech","Daniel Park"],["9:30–10:30 a.m.","Workshop: Social Media Trends","Emily Clark"],["10:30–11:30 a.m.","Lecture: Building a Brand","Mark Lee"],["11:30 a.m.–12:30 p.m.","Lunch",""],["12:30–1:30 p.m.","<s>Panel: Online Advertising</s> (Canceled)","Various"],["1:30–2:30 p.m.","Workshop: Customer Data","Emily Clark"],["2:30–3:30 p.m.","Presentation: Marketing Budgets","Sarah Kim"]]},
@@ -30,6 +43,10 @@ const P4_TABLES = {
  D:{title:"City Library Summer Program",info:"July · Free for members",head:["Date","Program","Time","Instructor"],rows:[["July 3 (Mon)","Kids Story Time","10:00 a.m.","Amy Lee"],["July 5 (Wed)","Resume Writing Workshop","7:00 p.m.","John Kim"],["July 10 (Mon)","Photography Basics","2:00 p.m.","Amy Lee"],["July 12 (Wed)","Resume Writing Workshop → <b>moved to July 14 (Fri)</b>","7:00 p.m.","John Kim"],["July 17 (Mon)","Book Club: Science Fiction","6:30 p.m.","Paul Han"]]},
  E:{title:"Business Trip Itinerary — Mr. Ryan Cho (Tokyo)",info:"Hotel: Shinjuku Plaza Hotel (2 nights)",head:["Date","Time","Schedule"],rows:[["Nov 3 (Tue)","8:20 a.m.","Depart Incheon (KE701) → arrive Tokyo 10:40 a.m."],["Nov 3","2:00 p.m.","Meeting with Sato Trading"],["Nov 4 (Wed)","10:00 a.m.","Factory tour, Yokohama"],["Nov 4","6:30 p.m.","<s>Dinner with clients</s> (Canceled)"],["Nov 5 (Thu)","1:00 p.m.","Depart Tokyo → arrive Incheon 3:30 p.m."]]},
  F:{title:"Riverside Community Center Fitness Classes",info:"Fee: $30 per month per class",head:["Class","Day","Time","Room"],rows:[["Yoga","Mon, Wed","7:00 a.m.","Studio A"],["Swimming","Tue, Thu","6:00 p.m.","Pool"],["Pilates","Mon, Wed","7:30 p.m.","Studio B"],["Basketball","Saturday","10:00 a.m.","Gym"],["Dance","Friday","8:00 p.m.","Studio A (new class)"]]},
+ H:{title:"Global Tech Expo — Day 2 Schedule",info:"Thursday, October 22 · Seoul Convention Center · Admission: $25 (students $15)",head:["Time","Event","Location","Speaker"],rows:[["9:30–10:30 a.m.","Keynote: The Future of Robotics","Hall A","Dr. Kevin Han"],["10:45–11:45 a.m.","Workshop: Smart Factories","Room 201","Grace Lee"],["12:00–1:00 p.m.","Lunch (provided for registered guests)","Lobby",""],["1:00–2:00 p.m.","<s>Panel: AI in Healthcare</s> (Canceled)","Hall B","Various"],["2:15–3:15 p.m.","Workshop: Battery Technology","Room 201","Grace Lee"],["3:30–4:30 p.m.","Product Demonstrations","Hall A","Exhibitors"]]},
+ I:{title:"Resume — Daniel Moore",info:"Applying for: Marketing Manager",head:["Section","Details"],rows:[["Education","MBA, Seoul National University, 2020"],["","B.A. in Business, University of Toronto, 2016"],["Experience","Marketing Team Leader, Blue Ocean Foods (2021–present)"],["","Marketing Assistant, Star Retail (2016–2020)"],["Skills","Data analysis, video editing, fluent in Korean and Spanish"],["Awards","Best Campaign Award, 2023"]]},
+ J:{title:"Riverside Hotel — Staff Training Week",info:"Monday, May 11 – Friday, May 15 · Training Room B",head:["Date","Session","Time","Trainer"],rows:[["May 11 (Mon)","Customer Service Basics","9:00 a.m.","Ann Kim"],["May 12 (Tue)","Handling Complaints","2:00 p.m.","Ann Kim"],["May 13 (Wed)","<s>Fire Safety</s> → <b>moved to May 15 (Fri), 10:00 a.m.</b>","1:00 p.m.","Mark Cho"],["May 14 (Thu)","Using the New Booking System","9:00 a.m.","Lisa Park"],["May 15 (Fri)","Team Dinner","6:30 p.m.","—"]]},
+ K:{title:"Westside Community Center — Weekend Classes",info:"Registration fee: $20 per class · Ages 18+",head:["Class","Day","Time","Instructor"],rows:[["Korean Cooking","Saturday","10:00 a.m.–12:00 p.m.","Mina Seo"],["Guitar for Beginners","Saturday","1:00–2:30 p.m.","Jake Lee"],["Photography","Sunday","9:00–11:00 a.m.","Mina Seo"],["Yoga","Sunday","4:00–5:00 p.m.","Hana Choi (new)"],["Painting","Sunday","6:00–8:00 p.m.","<s>Jake Lee</s> → Tom Yoon"]]},
  G:{title:"New Employee Training Workshop",info:"Friday, April 10 · Training Room 3",head:["Time","Session","Leader"],rows:[["9:00 a.m.","Company History & Values","CEO Jane Moon"],["10:00 a.m.","Safety Rules","Tom Baker"],["11:00 a.m.","Computer System Training","Lisa Park"],["12:00 p.m.","Lunch (provided)",""],["1:00 p.m.","Team Building Activity","Tom Baker"],["3:00 p.m.","Q&A with Managers","Various"]]}
 };
 const P4_DAYS = [
@@ -45,7 +62,15 @@ const P4_DAYS = [
  {t:"C",q:["Where did she get her bachelor's degree?","Does she speak any foreign languages?","Can you give me details about her education and skills?"]},
  {t:"D",q:["When is the book club meeting?","All the programs are in the morning, right?","I work during the day. Which programs can I attend in the evening?"]},
  {t:"E",q:["Where am I staying?","I'm coming back on Friday, right?","Can you tell me about all my meetings during the trip?"]},
- {t:"F",q:["Where is the dance class?","There are no classes on weekends, right?","Tell me about the classes on Monday and Wednesday."]}
+ {t:"F",q:["Where is the dance class?","There are no classes on weekends, right?","Tell me about the classes on Monday and Wednesday."]},
+// --- 2단계 (Day 15~21) ---
+ {t:"H",q:["What time does the keynote speech start, and who is giving it?","I'm planning to attend the panel on AI in healthcare after lunch. That's right?","What sessions is Grace Lee leading?"]},
+ {t:"I",q:["Where did he get his MBA, and when?","I heard he has never worked as a leader. Is that right?","Can you tell me about his work experience?"]},
+ {t:"J",q:["Where is the training held, and when does it start?","The fire safety session is on Wednesday, right?","What sessions are held in the morning?"]},
+ {t:"K",q:["How much does a class cost, and who can take the classes?","Jake Lee teaches the painting class, right?","What classes does Mina Seo teach?"]},
+ {t:"H",q:["Where is the expo, and how much is admission?","Lunch is provided for everyone, right?","What's happening in the afternoon after lunch?"]},
+ {t:"I",q:["What languages does he speak?","He graduated from a university in Korea, right?","Tell me about his education and awards."]},
+ {t:"K",q:["When is the guitar class?","There are no morning classes on Sunday, right?","I'm only free on Sunday. Which classes can I take?"]}
 ];
 const P5_DAYS = [
  ["Do you agree or disagree with the following statement? Employees should be allowed to work from home at least two days a week. Use specific reasons or examples to support your opinion.","Which is the most important quality for a team leader: good communication, technical knowledge, or decision-making skills? Use specific reasons or examples to support your opinion."],
@@ -60,5 +85,13 @@ const P5_DAYS = [
  ["Do you agree or disagree with the following statement? Governments should spend more money on public parks.","What is the best way to stay healthy: exercising regularly, eating healthy food, or getting enough sleep?"],
  ["Do you agree or disagree with the following statement? Students learn more from field trips than from classroom lessons.","Would you prefer a job with a high salary and long hours or a job with a lower salary and short hours? Why?"],
  ["Do you agree or disagree with the following statement? People should buy products from local businesses rather than large online stores.","What are the disadvantages of using a smartphone too much?"],
- ["Do you agree or disagree with the following statement? Companies should let employees use AI tools at work.","Do you agree or disagree with the following statement? A four-day work week is better for both companies and employees."]
+ ["Do you agree or disagree with the following statement? Companies should let employees use AI tools at work.","Do you agree or disagree with the following statement? A four-day work week is better for both companies and employees."],
+// --- 2단계 (Day 15~21) ---
+ ["Do you agree or disagree with the following statement? It is better to work for one company for a long time than to change jobs often.","Which is the most important skill for new employees: communication, problem-solving, or teamwork?"],
+ ["Do you agree or disagree with the following statement? Online reviews are reliable when choosing a product or a restaurant.","What are the advantages of living near your workplace?"],
+ ["Do you agree or disagree with the following statement? Companies should allow employees to choose their working hours.","Would you prefer to take a long vacation once a year or several short vacations? Why?"],
+ ["Do you agree or disagree with the following statement? Schools should teach students how to manage money.","What is the best way to reduce stress: exercising, talking with friends, or spending time alone?"],
+ ["Do you agree or disagree with the following statement? Robots and AI will create more jobs than they replace.","Which is more important for a leader: being friendly or being decisive? Why?"],
+ ["Do you agree or disagree with the following statement? It is important to learn about other cultures before traveling abroad.","What are the disadvantages of working from home?"],
+ ["Do you agree or disagree with the following statement? Experience is more important than education when hiring a new employee.","Would you prefer to work on a project alone or with a team? Why?"]
 ];

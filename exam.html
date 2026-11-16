@@ -211,12 +211,13 @@ button.say{padding:3px 8px;font-size:14px;margin-left:4px;background:#24364d;bor
   </section>
 </main>
 <script src="passages.js?v=14"></script>
-<script src="practice.js?v=14"></script>
+<script src="practice.js?v=35"></script>
+<script src="photos.js?v=35"></script>
 <script src="feedback.js?v=30"></script>
 <script src="grammar.js?v=32"></script>
 <script>
 const $=id=>document.getElementById(id);
-const EXAM_VER=34;
+const EXAM_VER=35;
 (function(){ try{ fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{
   if(j && j.v>EXAM_VER && sessionStorage.getItem('examReloadedFor')!==String(j.v) && !running){
     sessionStorage.setItem('examReloadedFor',String(j.v)); location.replace(location.pathname+'?r='+Date.now()+location.hash); } }).catch(()=>{}); }catch(e){} })();
@@ -224,7 +225,9 @@ const START='2026-11-15';
 let dOff=0, stopFlag=false, running=false, stream=null, recs=[], ctx=null, wakeLock=null;
 function seoul(){ return new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'})); }
 function dayIdx(){ const s=new Date(START+'T00:00:00'), d=seoul(); d.setHours(0,0,0,0); return Math.round((d-s)/86400000)+dOff; }
-function dayN(){ return (Math.max(0,dayIdx())%14)%13; } // Day14 -> Day1 review
+// 문제 세트 번호: Day1~13 → 세트 0~12, Day14(1차 시험일) → 12, Day15~21 → 새 세트 13~19, 그 뒤는 19
+function setOf(idx){ idx=Math.max(0,idx); if(idx<=12) return idx; if(idx===13) return 12; return Math.min(P3_SETS.length-1, idx-1); }
+function dayN(){ return setOf(dayIdx()); }
 function renderDay(){ const i=dayIdx(); const dn=Math.max(0,i)+1; const ex={14:' · 🎯 1차 시험일',22:' · 🎯 2차 시험일'}[dn]||''; const left=[[14,'1차'],[22,'2차']].filter(x=>x[0]>dn).map(x=>x[1]+' D-'+(x[0]-dn)).join(' · '); $('dLabel').textContent= 'Day '+dn+ex+(i<0?' (미리보기)':'')+(dOff===0?' · 오늘':'')+(left?'  ('+left+')':''); }
 $('dPrev').onclick=()=>{ if(!running){dOff--;renderDay();} }; $('dNext').onclick=()=>{ if(!running){dOff++;renderDay();} };
 function showTab(k){ ['P','A','N','G','R'].forEach(x=>{ $('sec'+x).classList.toggle('hide',x!==k); $('tab'+x).classList.toggle('on',x===k); }); if(k==='A') renderFB(); if(k==='N') renderNotes(); if(k==='G') renderGuide(); }
@@ -389,6 +392,10 @@ async function findPhotos(q){
 }
 function loadImg(src){ return new Promise((ok,no)=>{ const im=new Image(); im.onload=()=>ok(im); im.onerror=no; im.referrerPolicy='no-referrer'; im.src=src; setTimeout(()=>no('timeout'),12000); }); }
 async function pickPhoto(q,skip=0){
+  // 1) Claude가 고른 사진 먼저 (주제별 2~3장 중 무작위)
+  if(skip===0 && typeof PHOTOS!=='undefined' && PHOTOS[q] && PHOTOS[q].length){
+    for(const c of shuffle(PHOTOS[q].slice())){ try{ await loadImg(c.src); return {...c, idx:-1}; }catch(e){} } }
+  // 2) 없거나 안 열리면 실시간 검색
   const list=await findPhotos(q);
   for(let k=skip;k<list.length;k++){ try{ await loadImg(list[k].src); return {...list[k], idx:k}; }catch(e){ if(list[k].alt){ try{ await loadImg(list[k].alt); return {...list[k], src:list[k].alt, idx:k}; }catch(e2){} } } }
   return null;
@@ -437,7 +444,7 @@ function tableHTML(t){
   const info=t.info.split(/\s*·\s*/).map(x=>`<div>${x}</div>`).join('');
   return `<div class="doc"><div class="dtitle">${t.title}</div><div class="dinfo">${info}</div><table>${t.head.length?`<tr>${t.head.map(h=>`<th>${h}</th>`).join('')}</tr>`:''}${t.rows.map(r=>`<tr>${r.map((c,j)=>`<td${j===0?' class="c0"':''}>${c}</td>`).join('')}</tr>`).join('')}</table></div>`;
 }
-const P4_CALLER={A:"Hi, I'm planning to attend the marketing conference, and I'd like to ask a few questions about it.",B:"Hi, this is the HR manager. I'm on my way to the office, and I need to check a few things about today's interviews.",C:"Hello, I'm on the hiring committee for the project manager position. I have a few questions about Sophie Lin's résumé.",D:"Hi, I'm interested in the library's summer program, and I have a few questions.",E:"Hi, this is Ryan Cho. I left my itinerary at the office. Could you help me with some information about my trip?",F:"Hi, I'm thinking about signing up for a fitness class at the community center. Can I ask you a few questions?",G:"Hi, I'm starting at the company next week, and I have some questions about the training workshop."};
+const P4_CALLER={A:"Hi, I'm planning to attend the marketing conference, and I'd like to ask a few questions about it.",B:"Hi, this is the HR manager. I'm on my way to the office, and I need to check a few things about today's interviews.",C:"Hello, I'm on the hiring committee for the project manager position. I have a few questions about Sophie Lin's résumé.",D:"Hi, I'm interested in the library's summer program, and I have a few questions.",E:"Hi, this is Ryan Cho. I left my itinerary at the office. Could you help me with some information about my trip?",F:"Hi, I'm thinking about signing up for a fitness class at the community center. Can I ask you a few questions?",G:"Hi, I'm starting at the company next week, and I have some questions about the training workshop.",H:"Hi, I'm going to the tech expo tomorrow, and I'd like to check a few things about the schedule.",I:"Hello, I'm interviewing Daniel Moore this afternoon, but I don't have his résumé with me. Can you help me?",J:"Hi, I'm a new staff member at the hotel. I have a few questions about the training week.",K:"Hi, I'm interested in the weekend classes at the community center. Could I ask you a few questions?"};
 async function part4(only){
   const d=P4_DAYS[dayN()], t=P4_TABLES[d.t]; const times=[15,15,30];
   await directions(only,'Questions 8–10','Respond to Questions Using Information Provided','In this part of the test, you will answer three questions based on the information provided. You will have 45 seconds to read the information before the questions begin. You will have three seconds to prepare and 15 seconds to respond to Questions 8 and 9. You will hear Question 10 two times, and you will have 30 seconds to respond.');
@@ -488,7 +495,7 @@ function PART_OF(q){ return q<=2?'파트1 지문 읽기':q<=4?'파트2 사진 �
 function esc(t){ return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
 // 답안지 날짜 → 그날 앱이 낸 문제 (실전 연습과 같은 계산: START 기준 Day, 파트2~5는 (idx%14)%13, 지문은 idx*2)
 function promptsFor(date){
-  const idx=Math.round((new Date(date+'T00:00:00')-new Date(START+'T00:00:00'))/86400000), n=Math.max(0,idx)%14%13;
+  const idx=Math.round((new Date(date+'T00:00:00')-new Date(START+'T00:00:00'))/86400000), n=setOf(idx);
   const np=PASSAGES.length, k=((idx*2)%np+np)%np, sc=P2_SCENES[n], p3=P3_SETS[n], d4=P4_DAYS[n], p5=P5_DAYS[n];
   const P={1:PASSAGES[k].text, 2:PASSAGES[(k+1)%np].text, 3:'사진 주제: '+sc[0], 4:'사진 주제: '+sc[1], 11:p5[0]};
   for(let i=0;i<3;i++){ P[5+i]=p3.ctx+' — '+p3.q[i]; P[8+i]=d4.q[i]+(i===2?' (두 번 들려줌)':''); }
