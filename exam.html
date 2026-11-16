@@ -62,6 +62,10 @@ button.say{padding:3px 8px;font-size:14px;margin-left:4px;background:#24364d;bor
 .note{position:relative;padding:12px} .note .said{color:#fca5a5;text-decoration:line-through;text-decoration-thickness:1px;line-height:1.5;padding-right:44px}
 .note .why{color:var(--mut);font-size:13.5px;margin:6px 0;line-height:1.5} .note .fixd{color:#86efac;font-weight:700;line-height:1.6}
 .ntag{position:absolute;right:10px;top:10px;font-size:11px;background:#3b2a4a;color:#e9d5ff;border-radius:999px;padding:1px 8px} .ntag.pr{background:#4a3412;color:#fde68a} .ntag.ex{background:#12384a;color:#bae6fd}
+.pseg{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap} .pseg button{flex:1;min-width:70px;padding:9px 4px;font-size:14px} .pseg button.on{background:var(--acc);color:#fff}
+.cnt{display:inline-block;background:var(--bad);color:#fff;border-radius:999px;font-size:11px;padding:0 6px;margin-left:2px}
+.weak{border:1px solid #7f1d1d} .wk{border-top:1px solid #2a3340;padding:7px 0;line-height:1.5} .wk s{color:#fca5a5}
+.gd.star{border:1px solid var(--warn)} .ftag{float:right;font-size:11px;background:#4a3412;color:#fde68a;border-radius:999px;padding:1px 8px}
 .gd ul{margin:6px 0;padding-left:18px} .gd li{margin:3px 0;line-height:1.5} .gex{background:#0f1720;border-left:3px solid var(--ok);padding:6px 10px;border-radius:6px;margin-top:6px;line-height:1.5}
 .fbq{background:#f8fafc;color:#0f172a;border-radius:6px;padding:8px 10px;line-height:1.55;font-size:14.5px}
 .fbk{color:var(--acc);font-size:12px;font-weight:700;margin-top:8px}
@@ -74,7 +78,7 @@ button.say{padding:3px 8px;font-size:14px;margin-left:4px;background:#24364d;bor
   <div class="row"><a href="./">← 따라읽기·표현 앱으로</a></div>
   <h1>실전 연습 & 자료 모음</h1>
   <div class="sub">실제 시험과 같은 준비·답변 시간으로 연습하고, 녹음을 Claude 대화에 바로 공유하세요.</div>
-  <div class="tabs"><button id="tabP" class="on">⏱ 실전</button><button id="tabA">📝 답안지</button><button id="tabN">❌ 오답노트</button><button id="tabG">📘 파트4</button><button id="tabR">📚 자료</button></div>
+  <div class="tabs"><button id="tabP" class="on">⏱ 실전</button><button id="tabA">📝 답안지</button><button id="tabN">❌ 오답노트</button><button id="tabG">📘 파트별</button><button id="tabR">📚 자료</button></div>
 
   <!-- PRACTICE -->
   <section id="secP">
@@ -115,7 +119,7 @@ button.say{padding:3px 8px;font-size:14px;margin-left:4px;background:#24364d;bor
     <div id="fbBody"></div>
   </section>
   <section id="secN" class="hide"><div class="card sub">내가 실제로 말한 문장 → 왜 틀렸는지 → 고친 문장. 🔊 보통 속도 · 🐢 천천히. 고친 문장을 듣고 <b>따라 말하기</b>까지 하세요.</div><div id="noteBody"></div></section>
-  <section id="secG" class="hide"><div class="card sub">파트4 표 보고 답하기 — 상황별로 표를 문장으로 바꾸는 법. 예문은 🔊로 듣고 따라 말하세요.</div><div id="guideBody"></div></section>
+  <section id="secG" class="hide"><div class="pseg" id="pseg"><button data-g="2">파트2 사진</button><button data-g="3">파트3 질문</button><button data-g="4">파트4 표</button><button data-g="5">파트5 의견</button></div><div id="guideBody"></div></section>
   <section id="secR" class="hide">
     <div class="card" style="border:1px solid #4f9cf9">
       <h2>🆕 2026년 자료 (최신순)</h2>
@@ -209,10 +213,10 @@ button.say{padding:3px 8px;font-size:14px;margin-left:4px;background:#24364d;bor
 <script src="passages.js?v=14"></script>
 <script src="practice.js?v=14"></script>
 <script src="feedback.js?v=30"></script>
-<script src="grammar.js?v=30"></script>
+<script src="grammar.js?v=31"></script>
 <script>
 const $=id=>document.getElementById(id);
-const EXAM_VER=30;
+const EXAM_VER=31;
 (function(){ try{ fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{
   if(j && j.v>EXAM_VER && sessionStorage.getItem('examReloadedFor')!==String(j.v) && !running){
     sessionStorage.setItem('examReloadedFor',String(j.v)); location.replace(location.pathname+'?r='+Date.now()+location.hash); } }).catch(()=>{}); }catch(e){} })();
@@ -225,7 +229,7 @@ function renderDay(){ const i=dayIdx(); const dn=Math.max(0,i)%14+1; $('dLabel')
 $('dPrev').onclick=()=>{ if(!running){dOff--;renderDay();} }; $('dNext').onclick=()=>{ if(!running){dOff++;renderDay();} };
 function showTab(k){ ['P','A','N','G','R'].forEach(x=>{ $('sec'+x).classList.toggle('hide',x!==k); $('tab'+x).classList.toggle('on',x===k); }); if(k==='A') renderFB(); if(k==='N') renderNotes(); if(k==='G') renderGuide(); }
 $('tabP').onclick=()=>showTab('P'); $('tabA').onclick=()=>showTab('A'); $('tabR').onclick=()=>showTab('R'); $('tabN').onclick=()=>showTab('N'); $('tabG').onclick=()=>showTab('G');
-if(location.hash==='#resources') showTab('R'); if(location.hash==='#answers') setTimeout(()=>showTab('A'),0); if(location.hash==='#notes') setTimeout(()=>showTab('N'),0); if(location.hash==='#part4') setTimeout(()=>showTab('G'),0);
+if(location.hash==='#resources') showTab('R'); if(location.hash==='#answers') setTimeout(()=>showTab('A'),0); if(location.hash==='#notes') setTimeout(()=>showTab('N'),0); if(/^#part[2-5]?$/.test(location.hash)){ const m=location.hash.match(/\d/); if(m) gPart=+m[0]; setTimeout(()=>showTab('G'),0); }
 
 // ---------- audio helpers ----------
 let voices=[]; function lv(){ voices=speechSynthesis.getVoices(); } lv(); speechSynthesis.onvoiceschanged=lv;
@@ -511,10 +515,26 @@ function renderNotes(){
     } }
   $('noteBody').innerHTML=h||'<div class="card sub">아직 오답이 없어요.</div>';
 }
-// ---------- 📘 파트4 가이드 ----------
+// ---------- 📘 파트별 가이드 + 내 약점 ----------
+let gPart=null;
+function partNotes(part){ const F=(typeof FEEDBACK!=='undefined')?FEEDBACK:{}; const r=[]; const rng={2:[3,4],3:[5,7],4:[8,10],5:[11,11]}[part];
+  for(const d of Object.keys(F).sort().reverse()) for(const n of (F[d].notes||[])) if(n.q>=rng[0]&&n.q<=rng[1]) r.push({...n,date:d}); return r; }
+function weakParts(){ const c={2:0,3:0,4:0,5:0}; for(const k of [2,3,4,5]) c[k]=partNotes(k).length; return c; }
 function renderGuide(){
-  if(typeof P4GUIDE==='undefined'){ $('guideBody').innerHTML='<div class="card sub">가이드를 불러오지 못했어요.</div>'; return; }
-  $('guideBody').innerHTML=P4GUIDE.map(g=>`<div class="card gd"><b>${esc(g.t)}</b><ul>${g.tips.map(t=>`<li>${esc(t)}</li>`).join('')}</ul>${g.ex.map(x=>`<div class="gex">${esc(x)} ${sayBtns(x)}</div>`).join('')}</div>`).join('');
+  if(typeof PGUIDE==='undefined'){ $('guideBody').innerHTML='<div class="card sub">가이드를 불러오지 못했어요.</div>'; return; }
+  const cnt=weakParts();
+  if(gPart===null){ gPart=+Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a])[0]||4; } // 처음엔 오답이 가장 많은 파트
+  document.querySelectorAll('#pseg button').forEach(b=>{ const k=+b.dataset.g; b.classList.toggle('on',k===gPart); b.innerHTML=b.textContent.replace(/ ·\s*\d+$/,'')+(cnt[k]?` <span class="cnt">${cnt[k]}</span>`:''); b.onclick=()=>{ gPart=k; renderGuide(); }; });
+  const G=PGUIDE[gPart], ns=partNotes(gPart), blob=ns.map(n=>n.why+' '+n.fix+' '+n.said).join(' ');
+  const star=sec=>sec.keys&&sec.keys.some(k=>k&&blob.includes(k));
+  const focus=G.sec.filter(star).map(x=>x.t.split(' ')[0].replace('.',''));
+  let h=`<div class="card"><b>${esc(G.name)}</b></div>`;
+  h+=`<div class="card weak"><b>🎯 내 약점 — 이 파트 오답 ${ns.length}개</b>`+
+     (ns.length? `<div class="sub" style="margin:4px 0 6px">⭐ 집중할 섹션: ${focus.length?focus.join(', ')+'번':'(아래 전체)'}</div>`+
+       ns.map(n=>`<div class="wk"><span class="sub">${n.date.slice(5).replace('-','/')} Q${n.q}</span> <s>${esc(n.said)}</s><br>✔ <b>${esc(n.fix)}</b> ${sayBtns(n.fix)}<div class="sub">💡 ${esc(n.why)}</div></div>`).join('')
+       : '<div class="sub" style="margin-top:4px">아직 이 파트 오답이 없어요. 모의고사를 채점하면 여기 모여요.</div>')+`</div>`;
+  h+=G.sec.map(g=>`<div class="card gd${star(g)?' star':''}">${star(g)?'<span class="ftag">⭐ 집중</span>':''}<b>${esc(g.t)}</b><ul>${g.tips.map(t=>`<li>${esc(t)}</li>`).join('')}</ul>${g.ex.map(x=>`<div class="gex">${esc(x)} ${sayBtns(x)}</div>`).join('')}</div>`).join('');
+  $('guideBody').innerHTML=h;
 }
 function renderFB(){
   const F=(typeof FEEDBACK!=='undefined')?FEEDBACK:{}; const dates=Object.keys(F).sort().reverse(); const sel=$('fbDate');
