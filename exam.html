@@ -192,7 +192,7 @@ ul.links li{margin:5px 0;line-height:1.45}
 <script src="practice.js?v=14"></script>
 <script>
 const $=id=>document.getElementById(id);
-const EXAM_VER=25;
+const EXAM_VER=26;
 (function(){ try{ fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{
   if(j && j.v>EXAM_VER && sessionStorage.getItem('examReloadedFor')!==String(j.v) && !running){
     sessionStorage.setItem('examReloadedFor',String(j.v)); location.replace(location.pathname+'?r='+Date.now()+location.hash); } }).catch(()=>{}); }catch(e){} })();
@@ -227,7 +227,8 @@ async function respond(sec,label,cue='Begin speaking now.'){
   await new Promise(r=>mr.onstop=r);
   const ext=(mr.mimeType||'').includes('mp4')?'m4a':'webm';
   const blob=new Blob(chunks,{type:mr.mimeType||'audio/webm'});
-  recs.push({name:`Day${dayNo()}_${label}.${ext}`, blob}); saveRecs(); renderRecs(); await beep(500,0.15);
+  const base=`Day${dayNo()}_${label}`; const n=recs.filter(r=>!r.img && r.name.replace(/_\d+차/,'').startsWith(base+'.')).length;
+  recs.push({name: n? `${base}_${n+1}차.${ext}` : `${base}.${ext}`, blob}); saveRecs(); renderRecs(); await beep(500,0.15);
 }
 function renderRecs(){
   if(!recs.length){ $('recs').textContent='아직 없음'; ['shareAll','saveAll','clearRecs'].forEach(k=>$(k).classList.add('hide')); return; }
@@ -281,7 +282,9 @@ async function saveFiles(list){
       if(!root) root=await pickRoot();
       const where=new Set();
       for(const f of files){ const dn=dayFolderFor(f.name); const dir=await root.getDirectoryHandle(dn,{create:true}); where.add(dn);
-        const h=await dir.getFileHandle(f.name,{create:true}); const w=await h.createWritable(); await w.write(f); await w.close(); }
+        let fname=f.name; // 같은 이름이 이미 드라이브에 있으면 _2차, _3차 … 로 (덮어쓰지 않음)
+        for(let k=2;k<30;k++){ try{ await dir.getFileHandle(fname); fname=f.name.replace(/(_\d+차)?(\.\w+)$/,`_${k}차$2`); }catch(_){ break; } }
+        const h=await dir.getFileHandle(fname,{create:true}); const w=await h.createWritable(); await w.write(f); await w.close(); }
       $('shareMsg').innerHTML=`✅ 구글 드라이브 「${root.name}/${[...where].join(', ')}」에 ${files.length}개 저장했어요 (드라이브가 곧 동기화해요).<br>Claude에게 보내려면 그 폴더에서 파일을 선택해 <b>대화창에 끌어다 놓으세요</b>. <a href="#" id="chRoot">저장 폴더 바꾸기</a>`;
       const c=$('chRoot'); if(c) c.onclick=async e=>{ e.preventDefault(); try{ await pickRoot(); $('shareMsg').textContent='저장 폴더를 바꿨어요.'; }catch(_){} };
       return;
