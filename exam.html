@@ -54,6 +54,10 @@ ul.links li{margin:5px 0;line-height:1.45}
 #stage .doc th{background:#fff;color:#111;border:0;border-bottom:2px solid #111;text-align:left;padding:5px 6px}
 #stage .doc td{border:0;border-bottom:1px solid #ccc;padding:6px;color:#111}
 #stage .doc td.c0{white-space:nowrap;font-weight:600}
+.fb ul{margin:4px 0 6px;padding-left:18px} .fb li{margin:2px 0}
+.fbh{display:flex;gap:8px;align-items:center;margin-bottom:4px} .fbs{margin-left:auto;background:#24364d;color:#bfdbfe;border-radius:999px;padding:2px 10px;font-size:13px;font-weight:700}
+.fbk{color:var(--acc);font-size:12px;font-weight:700;margin-top:8px}
+.fbscript{background:#0f1720;border-left:3px solid var(--acc);padding:8px 10px;border-radius:6px;line-height:1.6;font-size:14.5px}
 .hide{display:none}
 </style>
 </head>
@@ -62,7 +66,7 @@ ul.links li{margin:5px 0;line-height:1.45}
   <div class="row"><a href="./">← 따라읽기·표현 앱으로</a></div>
   <h1>실전 연습 & 자료 모음</h1>
   <div class="sub">실제 시험과 같은 준비·답변 시간으로 연습하고, 녹음을 Claude 대화에 바로 공유하세요.</div>
-  <div class="tabs"><button id="tabP" class="on">⏱ 실전 연습</button><button id="tabR">📚 자료 모음</button></div>
+  <div class="tabs"><button id="tabP" class="on">⏱ 실전 연습</button><button id="tabA">📝 답안지</button><button id="tabR">📚 자료 모음</button></div>
 
   <!-- PRACTICE -->
   <section id="secP">
@@ -98,6 +102,10 @@ ul.links li{margin:5px 0;line-height:1.45}
   </section>
 
   <!-- RESOURCES -->
+  <section id="secA" class="hide">
+    <div class="card"><div class="row" style="display:flex;gap:8px;align-items:center"><label class="sub">모의고사 날짜</label><select id="fbDate" style="flex:1;font:inherit;background:#0b0f14;color:var(--fg);border:1px solid #2a3340;border-radius:10px;padding:8px"></select></div></div>
+    <div id="fbBody"></div>
+  </section>
   <section id="secR" class="hide">
     <div class="card" style="border:1px solid #4f9cf9">
       <h2>🆕 2026년 자료 (최신순)</h2>
@@ -190,9 +198,10 @@ ul.links li{margin:5px 0;line-height:1.45}
 </main>
 <script src="passages.js?v=14"></script>
 <script src="practice.js?v=14"></script>
+<script src="feedback.js?v=26"></script>
 <script>
 const $=id=>document.getElementById(id);
-const EXAM_VER=26;
+const EXAM_VER=27;
 (function(){ try{ fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{
   if(j && j.v>EXAM_VER && sessionStorage.getItem('examReloadedFor')!==String(j.v) && !running){
     sessionStorage.setItem('examReloadedFor',String(j.v)); location.replace(location.pathname+'?r='+Date.now()+location.hash); } }).catch(()=>{}); }catch(e){} })();
@@ -203,9 +212,9 @@ function dayIdx(){ const s=new Date(START+'T00:00:00'), d=seoul(); d.setHours(0,
 function dayN(){ return (Math.max(0,dayIdx())%14)%13; } // Day14 -> Day1 review
 function renderDay(){ const i=dayIdx(); const dn=Math.max(0,i)%14+1; $('dLabel').textContent= 'Day '+dn+(dn===14?' (Day 1 복습)':'')+(i<0?' (미리보기)':'')+(dOff===0?' · 오늘':''); }
 $('dPrev').onclick=()=>{ if(!running){dOff--;renderDay();} }; $('dNext').onclick=()=>{ if(!running){dOff++;renderDay();} };
-$('tabP').onclick=()=>{ $('secP').classList.remove('hide'); $('secR').classList.add('hide'); $('tabP').classList.add('on'); $('tabR').classList.remove('on'); };
-$('tabR').onclick=()=>{ $('secR').classList.remove('hide'); $('secP').classList.add('hide'); $('tabR').classList.add('on'); $('tabP').classList.remove('on'); };
-if(location.hash==='#resources') $('tabR').onclick();
+function showTab(k){ ['P','A','R'].forEach(x=>{ $('sec'+x).classList.toggle('hide',x!==k); $('tab'+x).classList.toggle('on',x===k); }); if(k==='A') renderFB(); }
+$('tabP').onclick=()=>showTab('P'); $('tabA').onclick=()=>showTab('A'); $('tabR').onclick=()=>showTab('R');
+if(location.hash==='#resources') showTab('R'); if(location.hash==='#answers') showTab('A');
 
 // ---------- audio helpers ----------
 let voices=[]; function lv(){ voices=speechSynthesis.getVoices(); } lv(); speechSynthesis.onvoiceschanged=lv;
@@ -459,6 +468,24 @@ function end(done){ running=false; $('stopBtn').classList.add('hide'); speechSyn
 $('stopBtn').onclick=()=>{ stopFlag=true; speechSynthesis.cancel(); };
 document.querySelectorAll('[data-part]').forEach(b=>b.onclick=()=>run(b.dataset.part));
 document.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>run(null,b.dataset.q));
+// ---------- 📝 답안지 ----------
+const PART_OF=q=>q<=2?'파트1 지문 읽기':q<=4?'파트2 사진 묘사':q<=7?'파트3 질문 답변':q<=10?'파트4 표 보고 답하기':'파트5 의견 제시';
+function esc(t){ return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+function renderFB(){
+  const F=(typeof FEEDBACK!=='undefined')?FEEDBACK:{}; const dates=Object.keys(F).sort().reverse(); const sel=$('fbDate');
+  if(!dates.length){ $('fbBody').innerHTML='<div class="card sub">아직 채점된 모의고사가 없어요.</div>'; return; }
+  if(!sel.options.length){ sel.innerHTML=dates.map(d=>`<option value="${d}">${d} · ${F[d].title||''}</option>`).join(''); sel.onchange=renderFB; }
+  const f=F[sel.value||dates[0]];
+  let h=`<div class="card"><b>총점 추정:</b> ${esc(f.total)}<br><b>가장 급한 약점:</b> ${esc(f.urgent)}<br><b>재도전 순서:</b> ${esc(f.retry||'')}</div>`;
+  for(let q=1;q<=11;q++){ const x=f.q[q]; if(!x) continue;
+    h+=`<div class="card fb"><div class="fbh"><b>Q${q}</b> <span class="sub">${PART_OF(q)}</span><span class="fbs">${esc(x.score)}</span></div>
+      <div class="fbk">고칠 점</div><ul>${x.fix.map(t=>`<li>${esc(t)}</li>`).join('')}</ul>
+      <div class="fbk">대본 (AH · 구조 참고용, 통째 암기 ✘)</div><div class="fbscript">${esc(x.script)}</div>
+      <div class="fbk">암기 단어</div><div>${x.words.map(w=>`<span class="tag" style="font-size:13px;color:var(--fg)">${esc(w)}</span>`).join(' ')}</div>
+      <div class="fbk">문법 요점</div><div>${esc(x.grammar)}</div></div>`; }
+  if(f.words&&f.words.length) h+=`<div class="card"><b>🚗 출퇴근 드릴에 추가된 암기 단어 (+${f.words.length})</b><div class="sub" style="margin-top:6px;line-height:1.7">${f.words.map(w=>esc(w[0])+' — '+esc(w[1].split('|')[0])).join('<br>')}</div></div>`;
+  $('fbBody').innerHTML=h;
+}
 renderDay(); loadRecs();
 document.addEventListener('keydown',e=>{ if(e.key==='Escape' && running){ $('stopBtn').click(); }
   if((e.key===' '||e.key==='Enter') && running){ const b=document.querySelector('#stage button.big'); if(b && document.activeElement!==b){ e.preventDefault(); b.click(); } } });

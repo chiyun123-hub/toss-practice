@@ -44,7 +44,7 @@ details summary{color:var(--mut);font-size:14px;cursor:pointer}
 <div id="tapAll">화면 아무 곳이나<br>한 번 눌러 주세요<small>휴대폰이 자동 소리 재생을 막았어요</small></div>
 <main>
   <h1>치윤 쉐도잉 · 토스 파트1</h1>
-  <div class="sub">버전 22 · 시작을 누른 뒤에는 화면을 보지 않아도 소리로만 진행돼요.</div>
+  <div class="sub">버전 27 · 시작을 누른 뒤에는 화면을 보지 않아도 소리로만 진행돼요.</div>
 
   <div class="row" style="margin-bottom:10px">
     <button id="modeB" style="flex:2">🚗 출퇴근 표현</button>
@@ -102,7 +102,7 @@ details summary{color:var(--mut);font-size:14px;cursor:pointer}
 지문 읽기: 영어로 <b>"next"</b> 다음 문장, <b>"stop"</b> 종료.</div>
 </main>
 <script>
-const APP_VER=22;
+const APP_VER=27;
 (function(){
   try{
     fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{
@@ -132,6 +132,7 @@ try{
 <script src="passages.js?v=14"></script>
 <script src="vocab.js?v=14"></script>
 <script src="core.js?v=14"></script>
+<script src="feedback.js?v=27"></script>
 <script>
 const $=id=>document.getElementById(id);
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
@@ -332,10 +333,14 @@ function setMode(m){ if(running) return; mode=m;
   $('modeA').style.background= m==='shadow'?'var(--acc)':''; $('modeB').style.background= m==='vocab'?'var(--acc)':'';
   renderDay(); }
 $('modeA').onclick=()=>setMode('shadow'); $('modeB').onclick=()=>setMode('vocab');
-function todaysVocab(){ const n=VOCAB_DAYS.length; const k=((dayIndex())%n+n)%n; return {day:k+1, items:VOCAB_DAYS[k]}; }
+// 오늘 표현 30개 + @ (가장 최근 모의고사 답안지의 암기 단어)
+function fbExtras(){ try{ if(typeof FEEDBACK==='undefined') return {date:null,items:[]}; const d=seoulToday(); d.setDate(d.getDate()+dayOffset);
+  const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  const ks=Object.keys(FEEDBACK).filter(x=>x<=key).sort(); const k=ks[ks.length-1]; return k?{date:k,items:FEEDBACK[k].words||[]}:{date:null,items:[]}; }catch(e){ return {date:null,items:[]}; } }
+function todaysVocab(){ const n=VOCAB_DAYS.length; const k=((dayIndex())%n+n)%n; const ex=fbExtras(); return {day:k+1, base:VOCAB_DAYS[k].length, extra:ex.items.length, exDate:ex.date, items:VOCAB_DAYS[k].concat(ex.items)}; }
 function renderVocab(active){
   const v=todaysVocab();
-  $('passageBox').innerHTML=`<div class="ptype">오늘의 표현 (Day ${v.day}) · 30개</div><div class="ptext">`+
+  $('passageBox').innerHTML=`<div class="ptype">오늘의 표현 (Day ${v.day}) · ${v.base}개`+(v.extra?` + @${v.extra} (${v.exDate.slice(5).replace('-','/')} 모의고사 오답 단어)`:'')+`</div><div class="ptext">`+
     v.items.map((it,i)=>`<div class="${active===i?'cur':''}" style="padding:2px 4px">${i+1}. ${it[0]} — <span style="color:#94a3b8">${it[1].split('|')[0]}</span></div>`).join('')+'</div>';
 }
 // ---------- grading ----------
