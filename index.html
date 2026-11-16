@@ -44,11 +44,11 @@ details summary{color:var(--mut);font-size:14px;cursor:pointer}
 <div id="tapAll">화면 아무 곳이나<br>한 번 눌러 주세요<small>휴대폰이 자동 소리 재생을 막았어요</small></div>
 <main>
   <h1>치윤 쉐도잉 · 토스 파트1</h1>
-  <div class="sub">버전 14 · 시작을 누른 뒤에는 화면을 보지 않아도 소리로만 진행돼요.</div>
+  <div class="sub">버전 15 · 시작을 누른 뒤에는 화면을 보지 않아도 소리로만 진행돼요.</div>
 
   <div class="row" style="margin-bottom:10px">
-    <button id="modeA" style="flex:1">🚗 출근 따라읽기</button>
-    <button id="modeB" style="flex:1">🌆 퇴근 표현</button>
+    <button id="modeB" style="flex:2">🚗 출퇴근 표현</button>
+    <button id="modeA" style="flex:1">📖 지문 읽기</button>
   </div>
   <div class="card">
     <div class="row">
@@ -100,7 +100,7 @@ details summary{color:var(--mut);font-size:14px;cursor:pointer}
   <div class="sub">음성 명령: 따라 읽는 대신 영어로 <b>"next"</b> 라고 하면 다음 문장, <b>"stop"</b> 이라고 하면 종료.</div>
 </main>
 <script>
-const APP_VER=14;
+const APP_VER=15;
 (function(){
   try{
     fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{
@@ -325,7 +325,7 @@ async function listen(){
 
 
 // ---------- mode ----------
-let mode = (seoulToday().getHours()>=15) ? 'vocab' : 'shadow';
+let mode = 'vocab'; // 출근·퇴근 모두 표현 드릴 (지문 읽기는 버튼으로 선택)
 function setMode(m){ if(running) return; mode=m;
   $('modeA').style.background= m==='shadow'?'var(--acc)':''; $('modeB').style.background= m==='vocab'?'var(--acc)':'';
   renderDay(); }
