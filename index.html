@@ -44,7 +44,7 @@ details summary{color:var(--mut);font-size:14px;cursor:pointer}
 <div id="tapAll">화면 아무 곳이나<br>한 번 눌러 주세요<small>휴대폰이 자동 소리 재생을 막았어요</small></div>
 <main>
   <h1>치윤 쉐도잉 · 토스 파트1</h1>
-  <div class="sub">버전 15 · 시작을 누른 뒤에는 화면을 보지 않아도 소리로만 진행돼요.</div>
+  <div class="sub">버전 19 · 시작을 누른 뒤에는 화면을 보지 않아도 소리로만 진행돼요.</div>
 
   <div class="row" style="margin-bottom:10px">
     <button id="modeB" style="flex:2">🚗 출퇴근 표현</button>
@@ -97,10 +97,12 @@ details summary{color:var(--mut);font-size:14px;cursor:pointer}
       <div id="log">아직 없음</div>
     </details>
   </div>
-  <div class="sub">음성 명령: 따라 읽는 대신 영어로 <b>"next"</b> 라고 하면 다음 문장, <b>"stop"</b> 이라고 하면 종료.</div>
+  <div class="sub">음성 명령 (출퇴근 표현): <b>"다시"</b>(또는 again) → 문제를 다시 들려줘요 · <b>"다음"</b> → 넘기기 · <b>"그만"</b> → 종료.<br>
+내비 안내 소리가 답에 섞이면 채점하지 않고 문제를 다시 들려줘요. 틀린 표현은 맞힐 때까지 최대 5번 다시 물어봐요.<br>
+지문 읽기: 영어로 <b>"next"</b> 다음 문장, <b>"stop"</b> 종료.</div>
 </main>
 <script>
-const APP_VER=15;
+const APP_VER=19;
 (function(){
   try{
     fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{
@@ -178,8 +180,8 @@ function say(text,lang='ko',rate){
     const u=new SpeechSynthesisUtterance(text);
     u.lang= lang==='en'?'en-US':'ko-KR'; const v=pickVoice(lang==='en'?'en-us':'ko'); if(v) u.voice=v;
     u.volume=1; u.rate= rate || (lang==='en'? parseFloat($('rate').value) : 1.05);
-    let done=false; const fin=()=>{ if(!done){done=true;res();} };
-    u.onend=fin; u.onerror=fin; setTimeout(fin, 2000+text.length*160);
+    let done=false, err=null; const fin=()=>{ if(!done){done=true;res(err);} };
+    u.onend=fin; u.onerror=e=>{ err=(e&&e.error)||'error'; fin(); }; setTimeout(fin, 2000+text.length*160);
     speechSynthesis.speak(u);
   });
 }
@@ -352,6 +354,18 @@ function enCorrect(answer, en){
   return {ok: miss.length<=allow, miss};
 }
 // ---------- vocab drill (Web Speech only, no own mic) ----------
+// 내비게이션 안내 음성이 섞였는지 판단 (한국어 내비 단어, 영어 답에 한글, 너무 긴 답)
+const NAV_RE=/(미터|킬로|앞에서|좌회전|우회전|직진|유턴|진입|진출|출구|차선|교차로|목적지|경로|도착|과속|단속|카메라|제한\s*속도|방면|고속도로|톨게이트|휴게소|보호\s*구역|안내를\s*시작|우측|좌측|분기|합류|터널|신호)/;
+function looksLikeNav(ans,lang,expected){
+  const t=(ans||'').trim(); if(!t) return false;
+  if(NAV_RE.test(t)) return true;
+  if(lang==='en-US' && /[가-힣]{2,}/.test(t)) return true;
+  if(lang==='en-US'){ const n=t.split(/\s+/).length, e=(expected||'').split(/\s+/).length; if(n>e*2+5) return true; }
+  if(lang==='ko-KR'){ const n=t.replace(/\s/g,'').length, e=(expected||'').replace(/\s/g,'').length; if(n>e*2+12) return true; }
+  return false;
+}
+function isAgain(t){ const x=(t||'').toLowerCase().replace(/[.!?,\s]/g,''); if(!x||x.length>14) return false;
+  return /^(다시|다시요|다시해|다시해줘|다시말해|다시말해줘|다시한번|한번더|again|repeat|repeatplease|onemoretime|sayagain|sayitagain|pardon|dashi|dasi|dashe|dasha|dossi)/.test(x); }
 async function askOnce(lang){
   closeMic();
   for(let k=0;k<2 && !stopFlag;k++){
@@ -364,48 +378,87 @@ async function askOnce(lang){
   }
   return '';
 }
-function isCmd(t,words){ const x=(t||'').toLowerCase().replace(/[.!?\s]/g,''); return words.some(w=>x===w); }
-async function runVocab(){
-  const v=todaysVocab(); const items=v.items; const wrong=[];
-  // round 1: EN -> KO
-  for(let i=0;i<items.length && !stopFlag;i++){
-    const [en,ko]=items[i]; renderVocab(i);
-    $('status').textContent=`1라운드 (영어→한국어) ${i+1}/${items.length}`; $('fb').innerHTML='';
-    await say(en,'en'); const ans=await askOnce('ko-KR'); if(stopFlag) break;
-    if(isCmd(ans,['그만','stop'])){ stopFlag=true; break; }
-    if(isCmd(ans,['다음','next','패스','pass'])){ wrong.push(i); continue; }
-    if(ans && koCorrect(ans,ko)){ $('fb').innerHTML='<span class="ok">✔ 맞아요</span>'; await say('맞아요'); }
-    else { wrong.push(i); $('fb').innerHTML='<span class="bad">✘ 정답: '+ko.split('|')[0]+'</span>'; await say('정답은 '+ko.split('|')[0]); }
-  }
-  if(stopFlag) return;
-  addLog(`<span class="pill">1라운드</span>${items.length-new Set(wrong).size}/${items.length} 맞음`);
-  // round 2: KO -> EN
-  await say('이번엔 한국어를 듣고 영어로 말해 주세요');
-  const wrong2=[];
-  for(let i=0;i<items.length && !stopFlag;i++){
-    const [en,ko]=items[i]; renderVocab(i);
-    $('status').textContent=`2라운드 (한국어→영어) ${i+1}/${items.length}`; $('fb').innerHTML='';
-    await say(ko.split('|')[0]); const ans=await askOnce('en-US'); if(stopFlag) break;
-    if(isCmd(ans,['그만','stop'])){ stopFlag=true; break; }
-    if(isCmd(ans,['다음','next','패스','pass'])){ wrong2.push(i); continue; }
-    const g=enCorrect(ans,en);
-    if(g.ok){ $('fb').innerHTML='<span class="ok">✔ 좋아요</span>'; await say('좋아요'); }
-    else { wrong2.push(i); $('fb').innerHTML='<span class="bad">✘ 정답: '+en+'</span>'+(g.miss.length&&ans?'<br>빠진/틀린 말: '+g.miss.join(' '):'');
-      await say('정답은'); await say(en,'en',0.75); }
-  }
-  if(stopFlag) return;
-  addLog(`<span class="pill">2라운드</span>${items.length-wrong2.length}/${items.length} 맞음`);
-  // review: items missed in round 2, once more
-  if(wrong2.length){
-    await say(`틀린 ${wrong2.length}개만 한 번 더 할게요`);
-    for(const i of wrong2){ if(stopFlag) break; const [en,ko]=items[i]; renderVocab(i);
-      $('status').textContent='복습 (한국어→영어)'; $('fb').innerHTML='';
-      await say(ko.split('|')[0]); const ans=await askOnce('en-US'); if(stopFlag) break;
-      if(enCorrect(ans,en).ok) await say('좋아요'); else { await say('정답은'); await say(en,'en',0.75); }
+// 문제 들려주기: 소리가 중간에 끊기면(다른 앱 소리 등) 한 번 더
+async function sayPrompt(text,lang){
+  const t0=performance.now(); const err=await say(text,lang);
+  const cut = (err && err!=='canceled') || (performance.now()-t0<350 && text.length>3);
+  if(!stopFlag && cut){ await new Promise(r=>setTimeout(r,700)); await say(text,lang); }
+}
+// 한 문제 묻기: "다시" → 다시 들려주기, 내비 소리 섞임 → 감점 없이 다시
+async function askItem(promptText,promptLang,ansLang,expected){
+  let navTries=0;
+  for(let rep=0; rep<6 && !stopFlag; rep++){
+    await sayPrompt(promptText,promptLang);
+    const ans=await askOnce(ansLang); if(stopFlag) return '';
+    if(isAgain(ans)){ $('fb').innerHTML='<span class="warn">↻ 다시 들려드릴게요</span>'; continue; }
+    if(looksLikeNav(ans,ansLang,expected)){
+      navTries++; $('fb').innerHTML='<span class="warn">🚗 내비 소리가 섞인 것 같아요 → 이번 건 채점 안 하고 다시</span>';
+      if(navTries>=3){ await say('소리가 계속 섞여서 이 문제는 나중에 다시 할게요'); return '__skip__'; }
+      await say('내비 소리가 섞였어요. 다시 들려드릴게요'); await new Promise(r=>setTimeout(r,1500)); continue;
     }
-    addLog('<b>오늘 어려웠던 표현:</b> '+wrong2.map(i=>items[i][0]).join(', '));
+    return ans;
   }
-  await say('오늘 표현 연습 끝이에요. 수고하셨어요 치윤님');
+  return '';
+}
+function isCmd(t,words){ const x=(t||'').toLowerCase().replace(/[.!?\s]/g,''); return words.some(w=>x===w); }
+// dir 'ek' = 영어 듣고 한국어로, 'ke' = 한국어 듣고 영어로. 결과: 'ok' | 'wrong' | 'skip' | 'stop'
+async function quiz(i,dir,label){
+  const [en,ko]=todaysVocab().items[i]; renderVocab(i);
+  $('status').textContent=label; $('fb').innerHTML='';
+  const ans= dir==='ek' ? await askItem(en,'en','ko-KR',ko.split('|')[0]) : await askItem(ko.split('|')[0],'ko','en-US',en);
+  if(stopFlag) return 'stop';
+  if(isCmd(ans,['그만','stop'])){ stopFlag=true; return 'stop'; }
+  if(ans==='__skip__') return 'skip';
+  if(isCmd(ans,['다음','next','패스','pass'])) return 'wrong';
+  if(dir==='ek'){
+    if(ans && koCorrect(ans,ko)){ $('fb').innerHTML='<span class="ok">✔ 맞아요</span>'; await say('맞아요'); return 'ok'; }
+    $('fb').innerHTML='<span class="bad">✘ 정답: '+ko.split('|')[0]+'</span>'; await say('정답은 '+ko.split('|')[0]); return 'wrong';
+  }
+  const g=enCorrect(ans,en);
+  if(g.ok){ $('fb').innerHTML='<span class="ok">✔ 좋아요</span>'; await say('좋아요'); return 'ok'; }
+  $('fb').innerHTML='<span class="bad">✘ 정답: '+en+'</span>'+(g.miss.length&&ans?'<br>빠진/틀린 말: '+g.miss.join(' '):'');
+  await say('정답은'); await say(en,'en',0.75); return 'wrong';
+}
+const REVIEW_ROUNDS=5;
+async function runVocab(){
+  const items=todaysVocab().items;
+  const miss=new Map(); // index -> 'ek' | 'ke' (틀린 방향)
+  const skipped=[];
+  // 1라운드: 영어 → 한국어
+  let ok1=0;
+  for(let i=0;i<items.length && !stopFlag;i++){
+    const r=await quiz(i,'ek',`1라운드 (영어→한국어) ${i+1}/${items.length}`);
+    if(r==='stop') break; if(r==='ok') ok1++; else if(r==='wrong') miss.set(i,'ek'); else skipped.push([i,'ek']);
+  }
+  if(stopFlag) return;
+  addLog(`<span class="pill">1라운드</span>${ok1}/${items.length} 맞음`);
+  // 2라운드: 한국어 → 영어
+  await say('이번엔 한국어를 듣고 영어로 말해 주세요');
+  let ok2=0;
+  for(let i=0;i<items.length && !stopFlag;i++){
+    const r=await quiz(i,'ke',`2라운드 (한국어→영어) ${i+1}/${items.length}`);
+    if(r==='stop') break; if(r==='ok') ok2++; else if(r==='wrong') miss.set(i,'ke'); else skipped.push([i,'ke']);
+  }
+  if(stopFlag) return;
+  addLog(`<span class="pill">2라운드</span>${ok2}/${items.length} 맞음`);
+  // 내비 때문에 못 한 문제는 감점 없이 복습 목록에 넣기
+  for(const [i,d] of skipped) if(!miss.has(i)) miss.set(i,d);
+  const firstMiss=[...miss.keys()];
+  // 복습: 틀린 것만, 맞힐 때까지 최대 5번
+  for(let rd=1; rd<=REVIEW_ROUNDS && miss.size && !stopFlag; rd++){
+    await say(rd===1 ? `틀린 ${miss.size}개만 다시 할게요. 맞히면 빠지고, 최대 다섯 번까지 해요` : `복습 ${rd}번째, ${miss.size}개 남았어요`);
+    const list=[...miss.keys()]; let n=0;
+    for(const i of list){ if(stopFlag) break; n++;
+      const r=await quiz(i,miss.get(i),`복습 ${rd}/${REVIEW_ROUNDS} · ${n}/${list.length}`);
+      if(r==='stop') break; if(r==='ok') miss.delete(i);
+    }
+    if(stopFlag) break;
+    addLog(`<span class="pill">복습 ${rd}</span>${list.length-miss.size}/${list.length} 맞힘`+(miss.size?` · 남은 ${miss.size}개`:' · 다 맞힘 🎉'));
+  }
+  if(firstMiss.length) addLog('<b>오늘 어려웠던 표현:</b> '+firstMiss.map(i=>items[i][0]).join(', '));
+  if(miss.size) addLog('<b>5번 해도 남은 표현:</b> '+[...miss.keys()].map(i=>items[i][0]).join(', '));
+  if(stopFlag) return;
+  await say(miss.size ? `오늘 표현 연습 끝이에요. ${miss.size}개는 내일 다시 봐요. 수고하셨어요 치윤님` : '틀린 것까지 다 맞혔어요. 수고하셨어요 치윤님');
 }
 
 // ---------- practice loop ----------
