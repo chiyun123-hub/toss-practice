@@ -201,7 +201,7 @@ ul.links li{margin:5px 0;line-height:1.45}
 <script src="feedback.js?v=26"></script>
 <script>
 const $=id=>document.getElementById(id);
-const EXAM_VER=27;
+const EXAM_VER=28;
 (function(){ try{ fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{
   if(j && j.v>EXAM_VER && sessionStorage.getItem('examReloadedFor')!==String(j.v) && !running){
     sessionStorage.setItem('examReloadedFor',String(j.v)); location.replace(location.pathname+'?r='+Date.now()+location.hash); } }).catch(()=>{}); }catch(e){} })();
@@ -214,7 +214,7 @@ function renderDay(){ const i=dayIdx(); const dn=Math.max(0,i)%14+1; $('dLabel')
 $('dPrev').onclick=()=>{ if(!running){dOff--;renderDay();} }; $('dNext').onclick=()=>{ if(!running){dOff++;renderDay();} };
 function showTab(k){ ['P','A','R'].forEach(x=>{ $('sec'+x).classList.toggle('hide',x!==k); $('tab'+x).classList.toggle('on',x===k); }); if(k==='A') renderFB(); }
 $('tabP').onclick=()=>showTab('P'); $('tabA').onclick=()=>showTab('A'); $('tabR').onclick=()=>showTab('R');
-if(location.hash==='#resources') showTab('R'); if(location.hash==='#answers') showTab('A');
+if(location.hash==='#resources') showTab('R'); if(location.hash==='#answers') setTimeout(()=>showTab('A'),0);
 
 // ---------- audio helpers ----------
 let voices=[]; function lv(){ voices=speechSynthesis.getVoices(); } lv(); speechSynthesis.onvoiceschanged=lv;
@@ -469,7 +469,7 @@ $('stopBtn').onclick=()=>{ stopFlag=true; speechSynthesis.cancel(); };
 document.querySelectorAll('[data-part]').forEach(b=>b.onclick=()=>run(b.dataset.part));
 document.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>run(null,b.dataset.q));
 // ---------- 📝 답안지 ----------
-const PART_OF=q=>q<=2?'파트1 지문 읽기':q<=4?'파트2 사진 묘사':q<=7?'파트3 질문 답변':q<=10?'파트4 표 보고 답하기':'파트5 의견 제시';
+function PART_OF(q){ return q<=2?'파트1 지문 읽기':q<=4?'파트2 사진 묘사':q<=7?'파트3 질문 답변':q<=10?'파트4 표 보고 답하기':'파트5 의견 제시'; }
 function esc(t){ return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
 function renderFB(){
   const F=(typeof FEEDBACK!=='undefined')?FEEDBACK:{}; const dates=Object.keys(F).sort().reverse(); const sel=$('fbDate');
