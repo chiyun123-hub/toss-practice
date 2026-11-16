@@ -231,10 +231,11 @@ async function fetchJSON(u,ms=8000){ const c=new AbortController(); const t=setT
 async function findPhotos(q){
   if(photoCache[q]) return photoCache[q];
   let list=[];
-  try{ // Openverse (Flickr 등 무료 사진)
-    const j=await fetchJSON('https://api.openverse.org/v1/images/?q='+encodeURIComponent(q)+'&page_size=20&aspect_ratio=wide&category=photograph&mature=false');
-    list=(j.results||[]).filter(r=>r.url && (!r.width||r.width>=600)).map(r=>({src:r.url, alt:r.thumbnail, credit:(r.title||'')+(r.creator?' · '+r.creator:'')}));
-  }catch(e){}
+  const w=q.split(' '); const tries=[q, w.slice(0,2).join(' ')+' people', w.slice(0,2).join(' ')];
+  for(const t of tries){ if(list.length>=5) break; try{ // Openverse (Flickr 등 무료 사진)
+    const j=await fetchJSON('https://api.openverse.org/v1/images/?q='+encodeURIComponent(t)+'&page_size=20&aspect_ratio=wide&category=photograph&mature=false');
+    list=list.concat((j.results||[]).filter(r=>r.url && (!r.width||r.width>=600) && !list.some(x=>x.src===r.url)).map(r=>({src:r.url, alt:r.thumbnail, credit:(r.title||'')+(r.creator?' · '+r.creator:'')})));
+  }catch(e){} }
   if(list.length<3){ try{ // Wikimedia Commons
     const j=await fetchJSON('https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrnamespace=6&gsrlimit=30&gsrsearch='+encodeURIComponent(q+' filetype:bitmap')+'&prop=imageinfo&iiprop=url|mime|size&iiurlwidth=1200');
     const pg=Object.values((j.query&&j.query.pages)||{});
