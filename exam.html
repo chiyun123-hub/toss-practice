@@ -216,7 +216,7 @@ button.say{padding:3px 8px;font-size:14px;margin-left:4px;background:#24364d;bor
 <script src="grammar.js?v=32"></script>
 <script>
 const $=id=>document.getElementById(id);
-const EXAM_VER=33;
+const EXAM_VER=34;
 (function(){ try{ fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{
   if(j && j.v>EXAM_VER && sessionStorage.getItem('examReloadedFor')!==String(j.v) && !running){
     sessionStorage.setItem('examReloadedFor',String(j.v)); location.replace(location.pathname+'?r='+Date.now()+location.hash); } }).catch(()=>{}); }catch(e){} })();
@@ -225,7 +225,7 @@ let dOff=0, stopFlag=false, running=false, stream=null, recs=[], ctx=null, wakeL
 function seoul(){ return new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Seoul'})); }
 function dayIdx(){ const s=new Date(START+'T00:00:00'), d=seoul(); d.setHours(0,0,0,0); return Math.round((d-s)/86400000)+dOff; }
 function dayN(){ return (Math.max(0,dayIdx())%14)%13; } // Day14 -> Day1 review
-function renderDay(){ const i=dayIdx(); const dn=Math.max(0,i)%14+1; $('dLabel').textContent= 'Day '+dn+(dn===14?' (Day 1 복습)':'')+(i<0?' (미리보기)':'')+(dOff===0?' · 오늘':''); }
+function renderDay(){ const i=dayIdx(); const dn=Math.max(0,i)+1; const ex={14:' · 🎯 1차 시험일',22:' · 🎯 2차 시험일'}[dn]||''; const left=[[14,'1차'],[22,'2차']].filter(x=>x[0]>dn).map(x=>x[1]+' D-'+(x[0]-dn)).join(' · '); $('dLabel').textContent= 'Day '+dn+ex+(i<0?' (미리보기)':'')+(dOff===0?' · 오늘':'')+(left?'  ('+left+')':''); }
 $('dPrev').onclick=()=>{ if(!running){dOff--;renderDay();} }; $('dNext').onclick=()=>{ if(!running){dOff++;renderDay();} };
 function showTab(k){ ['P','A','N','G','R'].forEach(x=>{ $('sec'+x).classList.toggle('hide',x!==k); $('tab'+x).classList.toggle('on',x===k); }); if(k==='A') renderFB(); if(k==='N') renderNotes(); if(k==='G') renderGuide(); }
 $('tabP').onclick=()=>showTab('P'); $('tabA').onclick=()=>showTab('A'); $('tabR').onclick=()=>showTab('R'); $('tabN').onclick=()=>showTab('N'); $('tabG').onclick=()=>showTab('G');
@@ -241,7 +241,7 @@ function countdown(sec,label,cls){ return new Promise(r=>{ $('phase').textConten
   const iv=setInterval(()=>{ if(stopFlag){clearInterval(iv);return r();} t--; $('timer').textContent=fmt(Math.max(t,0)); if(t<=0){clearInterval(iv); r();} },1000); }); }
 function fmt(s){ return '00:'+String(s).padStart(2,'0'); }
 async function openMic(){ if(stream) return true; try{ stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:true}}); return true; }catch(e){ return false; } }
-function dayNo(){ return Math.max(0,dayIdx())%14+1; } // 실제 일차 (14일차 포함)
+function dayNo(){ return Math.max(0,dayIdx())+1; } // 실제 일차 (Day1=11/15, 11/28=Day14 1차 시험, 12/6=Day22 2차 시험)
 async function respond(sec,label,cue='Begin speaking now.'){
   if(cue){ await say(cue); if(stopFlag) return; }
   await beep();
@@ -285,7 +285,7 @@ async function prepFiles(list){ $('shareMsg').textContent='공유용 파일 만�
 const IS_MOBILE=/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints>1 && /Macintosh/.test(navigator.userAgent));
 // 컴퓨터: 구글 드라이브 "토스 공부/모의고사 녹음" 폴더를 한 번 고르면 기억해 두고,
 // 저장할 때마다 그날 일차 폴더(01일차_11.15(일)_진단 모의고사 …)에 자동 저장. (크롬·엣지)
-const DAY_FOLDERS=['01일차_11.16(월)_파트5','02일차_11.17(화)_파트4','03일차_11.18(수)_파트3','04일차_11.19(목)_파트2','05일차_11.20(금)_파트5','06일차_11.21(토)_모의고사1','07일차_11.22(일)_파트4+5','08일차_11.23(월)_파트1+2','09일차_11.24(화)_파트3+5','10일차_11.25(수)_모의고사2','11일차_11.26(목)_약점 파트','12일차_11.27(금)_모의고사3','13일차_11.28(토)_가볍게 정리']; // 1일차 = 11/16(월)
+const DAY_FOLDERS=['01일차_11.16(월)_파트5','02일차_11.17(화)_파트4','03일차_11.18(수)_파트3','04일차_11.19(목)_파트2','05일차_11.20(금)_파트5','06일차_11.21(토)_중간 점검','07일차_11.22(일)_파트4+5','08일차_11.23(월)_파트1+2','09일차_11.24(화)_파트3+5','10일차_11.25(수)_리허설 1','11일차_11.26(목)_약점 파트','12일차_11.27(금)_리허설 2','13일차_11.28(토)_1차 시험 메모','14일차_11.29(일)_1차 메모·약점','15일차_11.30(월)_Q11 5점 루틴','16일차_12.01(화)_파트2·4 정확도','17일차_12.02(수)_리허설 3','18일차_12.03(목)_파트1 High','19일차_12.04(금)_리허설 4','20일차_12.05(토)_가볍게 정리']; // 1일차 = 11/16(월), 시험 11/28·12/6 // 1일차 = 11/16(월)
 const ROOT_NAME='모의고사 녹음';
 async function getRoot(){ try{ const db=await idb(); return await new Promise(ok=>{ const q=db.transaction('r').objectStore('r').get('root'); q.onsuccess=()=>ok(q.result||null); q.onerror=()=>ok(null); }); }catch(e){ return null; } }
 async function setRoot(h){ try{ const db=await idb(); db.transaction('r','readwrite').objectStore('r').put(h,'root'); }catch(e){} }
@@ -296,7 +296,7 @@ async function pickRoot(){
   await setRoot(h); return h;
 }
 // 파일 이름의 Day n(계획 기준, Day1=11/15) → 날짜 기준 폴더 (11/16 = 01일차). 11/15 녹음은 01일차로.
-function dayFolderFor(name){ const m=/^Day(\d+)_/.exec(name); const n=m?+m[1]:dayNo(); return DAY_FOLDERS[Math.min(13,Math.max(1,n-1))-1]; }
+function dayFolderFor(name){ const m=/^Day(\d+)_/.exec(name); const n=m?+m[1]:dayNo(); return DAY_FOLDERS[Math.min(DAY_FOLDERS.length,Math.max(1,n-1))-1]; }
 async function saveFiles(list){
   const files=await prepFiles(list);
   if(window.showDirectoryPicker){
