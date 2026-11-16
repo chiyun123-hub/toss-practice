@@ -67,6 +67,13 @@ button.say{padding:3px 8px;font-size:14px;margin-left:4px;background:#24364d;bor
 .weak{border:1px solid #7f1d1d} .wk{border-top:1px solid #2a3340;padding:7px 0;line-height:1.5} .wk s{color:#fca5a5}
 .gd.star{border:1px solid var(--warn)} .ftag{float:right;font-size:11px;background:#4a3412;color:#fde68a;border-radius:999px;padding:1px 8px}
 .gd ul{margin:6px 0;padding-left:18px} .gd li{margin:3px 0;line-height:1.5} .gex{background:#0f1720;border-left:3px solid var(--ok);padding:6px 10px;border-radius:6px;margin-top:6px;line-height:1.5}
+.mchip{display:inline-block;font-size:12px;border-radius:999px;padding:1px 8px;margin:3px 4px 0 0;background:#24364d} .mchip.ok{color:#86efac} .mchip.warn{color:#fde68a} .mchip.bad{color:#fca5a5}
+.cmpbox{background:#1f2a1f;border:1px solid #34c38f;border-radius:12px;padding:10px;margin-bottom:10px} .cmprow{margin-top:8px} .cmp2{display:grid;grid-template-columns:1fr 1fr;gap:8px} .cmp2 audio{width:100%}
+@media (max-width:480px){ .cmp2{grid-template-columns:1fr} }
+.rec button.tr{margin-left:4px} .mline{width:100%}
+#shadowOv{position:fixed;inset:0;background:rgba(10,13,18,.92);z-index:50;display:flex;align-items:center;justify-content:center;padding:14px}
+.shbox{background:var(--card);border-radius:14px;padding:16px;max-width:560px;width:100%} .shs{font-size:20px;line-height:1.5;margin:10px 0;color:#fff}
+.shres{min-height:60px;line-height:1.6} .shres .miss{color:#fca5a5;text-decoration:underline} .shbtns{display:flex;gap:8px;margin-top:12px} .shbtns button{flex:1} .shbtns button.on{background:var(--acc);color:#fff}
 .fbq{background:#f8fafc;color:#0f172a;border-radius:6px;padding:8px 10px;line-height:1.55;font-size:14.5px}
 .fbk{color:var(--acc);font-size:12px;font-weight:700;margin-top:8px}
 .fbscript{background:#0f1720;border-left:3px solid var(--acc);padding:8px 10px;border-radius:6px;line-height:1.6;font-size:14.5px}
@@ -217,7 +224,7 @@ button.say{padding:3px 8px;font-size:14px;margin-left:4px;background:#24364d;bor
 <script src="grammar.js?v=32"></script>
 <script>
 const $=id=>document.getElementById(id);
-const EXAM_VER=35;
+const EXAM_VER=36;
 (function(){ try{ fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{
   if(j && j.v>EXAM_VER && sessionStorage.getItem('examReloadedFor')!==String(j.v) && !running){
     sessionStorage.setItem('examReloadedFor',String(j.v)); location.replace(location.pathname+'?r='+Date.now()+location.hash); } }).catch(()=>{}); }catch(e){} })();
@@ -255,19 +262,65 @@ async function respond(sec,label,cue='Begin speaking now.'){
   const ext=(mr.mimeType||'').includes('mp4')?'m4a':'webm';
   const blob=new Blob(chunks,{type:mr.mimeType||'audio/webm'});
   const base=`Day${dayNo()}_${label}`; const n=recs.filter(r=>!r.img && r.name.replace(/_\d+차/,'').startsWith(base+'.')).length;
-  recs.push({name: n? `${base}_${n+1}차.${ext}` : `${base}.${ext}`, blob}); saveRecs(); renderRecs(); await beep(500,0.15);
+  const rec={name: n? `${base}_${n+1}차.${ext}` : `${base}.${ext}`, blob}; recs.push(rec);
+  try{ rec.m=await audioMetrics(blob, sec); }catch(e){}
+  saveRecs(); renderRecs();
+  if(!MOCK && rec.m) $('stage').insertAdjacentHTML('beforeend', `<div class="card" style="margin-top:10px"><b>방금 답변 점검</b><br>${metricsHTML(rec.m)}</div>`); await beep(500,0.15);
+}
+
+// ---------- ① 자기 점검: 녹음에서 말한 시간·침묵 계산 ----------
+const QSEC={1:45,2:45,3:30,4:30,5:15,6:15,7:30,8:15,9:15,10:30,11:60};
+async function audioMetrics(blob, sec){
+  const ac=new (window.OfflineAudioContext||window.webkitOfflineAudioContext)(1,16000,16000);
+  const buf=await ac.decodeAudioData(await blob.arrayBuffer()); const x=buf.getChannelData(0), sr=buf.sampleRate, hop=Math.round(sr*0.02);
+  const e=[]; for(let i=0;i+hop<=x.length;i+=hop){ let s2=0; for(let j=i;j<i+hop;j++) s2+=x[j]*x[j]; e.push(Math.sqrt(s2/hop)); }
+  if(!e.length) return null; const srt=e.slice().sort((a,b)=>a-b); const floor=srt[Math.floor(srt.length*0.2)], peak=srt[Math.floor(srt.length*0.98)];
+  const thr=Math.max(floor*2.5, peak*0.12, 0.004); const v=e.map(y=>y>thr);
+  // 0.25초 이하 끊김은 말하는 중으로 봄
+  let first=v.indexOf(true); if(first<0) return {dur:x.length/sr, speak:0, lead:x.length/sr, maxGap:0, tail:0, sec};
+  let last=v.lastIndexOf(true), speak=0, gap=0, maxGap=0;
+  for(let i=first;i<=last;i++){ if(v[i]){ if(gap>0.25) maxGap=Math.max(maxGap,gap); if(gap<=0.25) speak+=gap; gap=0; speak+=0.02; } else gap+=0.02; }
+  const dur=x.length/sr;
+  return {dur, speak:+speak.toFixed(1), lead:+(first*0.02).toFixed(1), maxGap:+maxGap.toFixed(1), tail:+(dur-(last+1)*0.02).toFixed(1), sec:sec||Math.round(dur)};
+}
+function metricsHTML(m){
+  if(!m) return '';
+  const fill=m.speak/m.sec, cls=(ok,warn)=>ok?'ok':warn?'warn':'bad';
+  const c1=cls(fill>=0.75, fill>=0.55), c2=cls(m.maxGap<2, m.maxGap<3), c3=cls(m.lead<2.5, m.lead<4), c4=cls(m.tail<3, m.tail<5);
+  const tip= fill<0.55?'답이 너무 짧아요 → 한 문장 더 붙이기': m.maxGap>=3?'중간에 3초 넘게 멈췄어요 → 쉬운 문장으로라도 이어가기': m.tail>=5?'일찍 끝났어요 → 느낌·이유 한 문장 추가': m.lead>=4?'시작이 늦어요 → 질문 단어를 받아 바로 시작': '시간을 잘 채웠어요 👍';
+  return `<span class="mchip ${c1}">🗣 ${m.speak}초 / ${m.sec}초</span><span class="mchip ${c2}">최대 침묵 ${m.maxGap}초</span><span class="mchip ${c3}">시작 ${m.lead}초</span><span class="mchip ${c4}">끝 침묵 ${m.tail}초</span><div class="sub" style="margin-top:3px">${tip}</div>`;
+}
+// 받아쓰기 (단어 수): 휴대폰 안에서 Whisper (처음 한 번 모델 받기, 출퇴근 앱과 같은 모델이라 이미 받았으면 바로)
+let asrPipe=null, asrLoading=null;
+async function loadASR(){ if(asrPipe) return asrPipe; if(!asrLoading) asrLoading=(async()=>{ const T=await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1'); T.env.allowLocalModels=false; return await T.pipeline('automatic-speech-recognition','Xenova/whisper-base.en',{dtype:'q8'}); })(); asrPipe=await asrLoading; return asrPipe; }
+async function transcribe(blob){
+  const p=await loadASR(); const ac=new (window.OfflineAudioContext||window.webkitOfflineAudioContext)(1,16000,16000);
+  const b=await ac.decodeAudioData(await blob.arrayBuffer()); const x=b.getChannelData(0), r=b.sampleRate/16000, n=Math.floor(x.length/r), o=new Float32Array(n);
+  for(let i=0;i<n;i++) o[i]=x[Math.floor(i*r)]; let pk=0; for(const v of o) pk=Math.max(pk,Math.abs(v)); if(pk>0&&pk<0.9){ const g=Math.min(20,0.9/pk); for(let i=0;i<n;i++) o[i]*=g; }
+  const out=await p(o,{chunk_length_s:30,stride_length_s:5}); return (Array.isArray(out)?out.map(z=>z.text).join(' '):out.text||'').replace(/\[.*?\]|\(.*?\)/g,'').trim();
 }
 function renderRecs(){
   if(!recs.length){ $('recs').textContent='아직 없음'; ['shareAll','saveAll','clearRecs'].forEach(k=>$(k).classList.add('hide')); return; }
-  $('recs').innerHTML=''; recs.forEach((r,i)=>{ const d=document.createElement('div'); d.className='rec';
-    const url=URL.createObjectURL(r.blob); d.innerHTML=`<b style="min-width:120px">${r.name}</b><button data-i="${i}">${IS_MOBILE?'📤 공유':'💾 저장'}</button>`+(r.img? (r.blob.type.startsWith('image')?`<img src="${url}" style="width:100%;border-radius:8px">`:'') : `<audio controls src="${url}"></audio>`);
-    d.querySelector('button').onclick=()=>{ const ph=recs.find(x=>x.img && x.name.startsWith(r.name.replace(/\.\w+$/,'')+'_사진')); shareFiles(ph&&!r.img?[ph,r]:[r]); }; $('recs').appendChild(d); });
+  $('recs').innerHTML='';
+  // ② 같은 문항을 2번 이상 녹음했으면 맨 위에 전후 비교
+  const groups={}; recs.forEach(r=>{ if(r.img) return; const b=r.name.replace(/(_\d+차)?\.\w+$/,''); (groups[b]=groups[b]||[]).push(r); });
+  const cmp=Object.entries(groups).filter(([b,g])=>g.length>=2);
+  if(cmp.length){ const c=document.createElement('div'); c.className='cmpbox';
+    c.innerHTML='<b>🆚 재도전 전후 비교</b>'+cmp.map(([b,g])=>{ const a=g[0], z=g[g.length-1];
+      return `<div class="cmprow"><div class="sub">${b.replace(/^Day\d+_/,'')} · ${g.length}번 녹음</div><div class="cmp2"><div><span class="tag">처음</span><audio controls src="${URL.createObjectURL(a.blob)}"></audio>${metricsHTML(a.m)}</div><div><span class="tag">최근 (${g.length}차)</span><audio controls src="${URL.createObjectURL(z.blob)}"></audio>${metricsHTML(z.m)}</div></div></div>`; }).join('');
+    $('recs').appendChild(c); }
+  recs.forEach((r,i)=>{ const d=document.createElement('div'); d.className='rec';
+    const url=URL.createObjectURL(r.blob); d.innerHTML=`<b style="min-width:120px">${r.name}</b><button data-i="${i}">${IS_MOBILE?'📤 공유':'💾 저장'}</button>`+(r.img?'':`<button class="tr">📝 받아쓰기</button>`)+(r.img? (r.blob.type.startsWith('image')?`<img src="${url}" style="width:100%;border-radius:8px">`:'') : `<audio controls src="${url}"></audio><div class="mline">${metricsHTML(r.m)}</div><div class="trtext sub">${r.text?esc(r.text)+` <b>(${r.text.split(/\s+/).filter(Boolean).length}단어)</b>`:''}</div>`);
+    d.querySelector('button').onclick=()=>{ const ph=recs.find(x=>x.img && x.name.startsWith(r.name.replace(/(_\d+차)?\.\w+$/,'')+'_사진')); shareFiles(ph&&!r.img?[ph,r]:[r]); };
+    const tb=d.querySelector('button.tr'); if(tb) tb.onclick=async()=>{ tb.disabled=true; const t=d.querySelector('.trtext'); t.textContent= asrPipe?'받아쓰는 중…':'받아쓰기 준비 중… (처음 한 번 모델 받기)';
+      try{ if(!r.m) r.m=await audioMetrics(r.blob, QSEC[+((r.name.match(/_Q(\d+)/)||[])[1])]); r.text=await transcribe(r.blob); saveRecs(); renderRecs(); }catch(e){ t.textContent='받아쓰기 실패: '+e.message; tb.disabled=false; } };
+    $('recs').appendChild(d); });
   ['shareAll','saveAll','clearRecs'].forEach(k=>$(k).classList.remove('hide'));
   if(!IS_MOBILE){ $('shareAll').textContent='💾 구글 드라이브 일차 폴더에 저장'; $('saveAll').classList.add('hide'); }
 }
 // ---- 녹음 보관 (페이지를 닫거나 새로고침해도 남게) ----
 function idb(){ return new Promise((ok,no)=>{ const r=indexedDB.open('toss-recs',1); r.onupgradeneeded=()=>r.result.createObjectStore('r'); r.onsuccess=()=>ok(r.result); r.onerror=()=>no(r.error); }); }
-async function saveRecs(){ try{ const db=await idb(); const tx=db.transaction('r','readwrite'); tx.objectStore('r').put(recs.map(x=>({name:x.name,blob:x.blob,img:!!x.img})),'list'); }catch(e){} }
+async function saveRecs(){ try{ const db=await idb(); const tx=db.transaction('r','readwrite'); tx.objectStore('r').put(recs.map(x=>({name:x.name,blob:x.blob,img:!!x.img,m:x.m||null,text:x.text||''})),'list'); }catch(e){} }
 async function loadRecs(){ try{ const db=await idb(); const v=await new Promise(ok=>{ const q=db.transaction('r').objectStore('r').get('list'); q.onsuccess=()=>ok(q.result); q.onerror=()=>ok(null); }); if(v&&v.length){ recs=v; renderRecs(); $('shareMsg').textContent='이전에 녹음한 '+v.filter(x=>!x.img).length+'개를 불러왔어요. 다 보냈으면 🗑로 비우세요.'; } }catch(e){} }
 // ---- 공유: 갤럭시 크롬은 .webm 음성 공유를 막아서 .wav로 바꿔 보냄 ----
 function wavFrom(buf){ const sr=16000, ch=buf.getChannelData(0), r=buf.sampleRate/sr, n=Math.floor(ch.length/r);
@@ -420,9 +473,10 @@ async function part2(only){
   for(let i=0;i<2 && !stopFlag;i++){
     const q=i+3; if(only && only!==q) continue;
     show(head(`Question ${q} of 11`,'Describe a Picture')+'<p class="sub">사진 불러오는 중…</p>');
-    const p=await pre[i]; if(stopFlag) return;
+    const prev=recs.find(r=>r.img && r.blob.type.startsWith('image') && r.name.startsWith(`Day${dayNo()}_Q${q}_사진`)); // 재도전이면 지난번과 같은 사진
+    const p= prev ? {src:URL.createObjectURL(prev.blob), credit:'재도전 — 지난번과 같은 사진'} : await pre[i]; if(stopFlag) return;
     show(head(`Question ${q} of 11`,'Describe a Picture')+photoHTML(p,sc[i])); bindFull();
-    if(p) savePhoto(p, `Day${dayNo()}_Q${q}_사진`, sc[i]);
+    if(p && !prev) savePhoto(p, `Day${dayNo()}_Q${q}_사진`, sc[i]);
     await prepare(45); if(stopFlag) return;
     await respond(30,`Q${q}`);
   }
@@ -471,6 +525,19 @@ async function part5(which){
     await respond(60,`Q11-${k+1}`);
   }
 }
+async function runOne(q){ q=+q; if(q<=2) await part1(q); else if(q<=4) await part2(q); else if(q<=7) await part3(q); else if(q<=10) await part4(q); else await part5(0); }
+// 🔁 재도전: 답안지 날짜의 문제로, 재도전 순서대로 이어서
+async function runRetry(date, qs){
+  if(running) return; const today=Math.round((new Date(seoul().toDateString())-new Date(START+'T00:00:00'))/86400000);
+  const idx=Math.round((new Date(date+'T00:00:00')-new Date(START+'T00:00:00'))/86400000); dOff=idx-today; renderDay(); showTab('P');
+  running=true; stopFlag=false; $('stopBtn').classList.remove('hide'); MOCK=false;
+  ctx=ctx||new (window.AudioContext||window.webkitAudioContext)(); await Promise.race([ctx.resume(), new Promise(r=>setTimeout(r,1500))]);
+  if(!await openMic()){ show('마이크를 허용해 주세요.'); return end(); }
+  try{ wakeLock=await Promise.race([navigator.wakeLock.request('screen'), new Promise(r=>setTimeout(()=>r(null),1500))]); }catch(e){}
+  try{ for(let i=0;i<qs.length && !stopFlag;i++){ show(`<div class="dirs">🔁 재도전 ${i+1}/${qs.length} · <b>Q${qs[i]}</b><br><span class="sub">📝 답안지의 고칠 점 하나만 생각하고, 내 말로.</span></div>`); await say('Retry. Question '+qs[i]+'.'); await new Promise(r=>setTimeout(r,1200)); if(stopFlag) break; await runOne(qs[i]); } }
+  catch(e){ show('오류: '+e.message); }
+  end(!stopFlag); dOff=0; renderDay();
+}
 async function run(part,q){
   if(running) return; running=true; stopFlag=false; $('stopBtn').classList.remove('hide');
   ctx=ctx||new (window.AudioContext||window.webkitAudioContext)(); await Promise.race([ctx.resume(), new Promise(r=>setTimeout(r,1500))]);
@@ -478,7 +545,7 @@ async function run(part,q){
   try{ wakeLock=await Promise.race([navigator.wakeLock.request('screen'), new Promise(r=>setTimeout(()=>r(null),1500))]); }catch(e){}
   MOCK=(part==='all'); if(MOCK||part==='2') prefetchPhotos();
   try{
-    if(q){ q=+q; if(q<=2) await part1(q); else if(q<=4) await part2(q); else if(q<=7) await part3(q); else if(q<=10) await part4(q); else await part5(0); }
+    if(q){ await runOne(q); }
     else if(part==='1') await part1(); else if(part==='2') await part2(); else if(part==='3') await part3();
     else if(part==='4') await part4(); else if(part==='5') await part5();
     else { await say('TOEIC Speaking test. Questions 1 through 11.'); await part1(); if(!stopFlag) await part2(); if(!stopFlag) await part3(); if(!stopFlag) await part4(); if(!stopFlag) await part5(0); if(!stopFlag){ show(head('','End of the Test')+'<div class="dirs">This is the end of the Speaking test.<br><br>수고하셨어요 치윤님! 아래 녹음을 Claude에게 보내 주세요.</div>'); await say('This is the end of the Speaking test.'); } }
@@ -506,7 +573,7 @@ function speakEN(t,slow){ try{ speechSynthesis.cancel(); const u=new SpeechSynth
   const v=speechSynthesis.getVoices().filter(x=>/^en[-_]US/i.test(x.lang)); const g=v.find(x=>/google|natural|aria|jenny|samantha/i.test(x.name))||v[0]; if(g) u.voice=g;
   u.rate=slow?0.7:0.95; speechSynthesis.speak(u); }catch(e){} }
 function sayBtns(t){ const a=encodeURIComponent(t); return `<button class="say" data-t="${a}">🔊</button><button class="say" data-t="${a}" data-slow="1">🐢</button>`; }
-document.addEventListener('click',e=>{ const b=e.target.closest('button.say'); if(b){ speakEN(decodeURIComponent(b.dataset.t), !!b.dataset.slow); } });
+document.addEventListener('click',e=>{ const b=e.target.closest('button.say'); if(b && !b.classList.contains('shadow')){ speakEN(decodeURIComponent(b.dataset.t), !!b.dataset.slow); } });
 // ---------- ❌ 오답노트 ----------
 function renderNotes(){
   const F=(typeof FEEDBACK!=='undefined')?FEEDBACK:{}; let h='';
@@ -548,18 +615,61 @@ function renderFB(){
   if(!dates.length){ $('fbBody').innerHTML='<div class="card sub">아직 채점된 모의고사가 없어요.</div>'; return; }
   if(!sel.options.length){ sel.innerHTML=dates.map(d=>`<option value="${d}">${d} · ${F[d].title||''}</option>`).join(''); sel.onchange=renderFB; }
   const f=F[sel.value||dates[0]];
-  let h=`<div class="card"><b>총점 추정:</b> ${esc(f.total)}<br><b>가장 급한 약점:</b> ${esc(f.urgent)}<br><b>재도전 순서:</b> ${esc(f.retry||'')}</div>`;
+  const curDate=sel.value||dates[0]; const rq=((f.retry||'').match(/\d+/g)||[]).map(Number).filter(n=>n>=1&&n<=11);
+  let h=scoreChart(F)+`<div class="card"><b>총점 추정:</b> ${esc(f.total)}<br><b>가장 급한 약점:</b> ${esc(f.urgent)}<br><b>재도전 순서:</b> ${esc(f.retry||'')}
+    ${rq.length?`<button class="big" id="retryBtn" style="margin-top:10px;font-size:17px;padding:14px">🔁 재도전 시작 (${rq.map(n=>'Q'+n).join(' → ')})</button><div class="sub" style="margin-top:4px">이 날짜 문제로 순서대로 다시 녹음해요. 사진 문제는 지난번과 같은 사진. 녹음 목록 맨 위에 처음·최근 비교가 생겨요.</div>`:''}</div>`;
   const pr=promptsFor(sel.value||dates[0]); const PQ=Object.assign({}, pr.P, f.prompts||{});
   for(let q=1;q<=11;q++){ const x=f.q[q]; if(!x) continue;
     if(q===8) h+=`<div class="card"><div class="fbk" style="margin-top:0">파트4 표 (Q8~10 공통)</div><div style="margin-top:6px">${tableHTML(pr.table)}</div></div>`;
     h+=`<div class="card fb"><div class="fbh"><b>Q${q}</b> <span class="sub">${PART_OF(q)}</span><span class="fbs">${esc(x.score)}</span></div>
       <div class="fbk">문제</div><div class="fbq">${esc(PQ[q]||'')}</div>
       <div class="fbk">고칠 점</div><ul>${x.fix.map(t=>`<li>${esc(t)}</li>`).join('')}</ul>
-      <div class="fbk">대본 (AH · 구조 참고용, 통째 암기 ✘) ${sayBtns(x.script.replace(/[↗↘\/]/g,'').replace(/\(.*?\)/g,''))}</div><div class="fbscript">${esc(x.script)}</div>
+      <div class="fbk">대본 (AH · 구조 참고용, 통째 암기 ✘) <button class="say shadow" data-q="${q}" data-t="${encodeURIComponent(x.script)}">🎤 따라 말하기</button> ${sayBtns(x.script.replace(/[↗↘\/]/g,'').replace(/\(.*?\)/g,''))}</div><div class="fbscript">${esc(x.script)}</div>
       <div class="fbk">암기 단어</div><div>${x.words.map(w=>`<span class="tag" style="font-size:13px;color:var(--fg)">${esc(w)}</span>`).join(' ')}</div>
       <div class="fbk">문법 요점</div><div>${esc(x.grammar)}</div></div>`; }
   if(f.words&&f.words.length) h+=`<div class="card"><b>🚗 출퇴근 드릴에 추가된 암기 단어 (+${f.words.length})</b><div class="sub" style="margin-top:6px;line-height:1.7">${f.words.map(w=>esc(w[0])+' — '+esc(w[1].split('|')[0])).join('<br>')}</div></div>`;
   $('fbBody').innerHTML=h;
+  const rb=$('retryBtn'); if(rb) rb.onclick=()=>runRetry(curDate, rq);
+  document.querySelectorAll('#fbBody button.shadow').forEach(b=>b.onclick=()=>shadowScript(decodeURIComponent(b.dataset.t), b.dataset.q));
+}
+// ---------- ⑥ 점수 변화 그래프 (원점수 /35: Q1~2 발음·억양 평균 + Q3~10 + Q11) ----------
+function rawScore(f){ let t=0; for(let q=1;q<=11;q++){ const sc=(f.q[q]&&f.q[q].score)||''; const nums=(sc.match(/\d+(?=\s*(?:\/|·|$|\s|\())/g)||sc.match(/\d+/g)||[]).map(Number);
+  if(!nums.length) continue; if(q<=2){ const a=(sc.match(/\d+/g)||[]).map(Number).filter(n=>n<=3); t+= a.length? a.reduce((x,y)=>x+y,0)/a.length : 0; } else t+= Math.min(q===11?5:3, nums[0]); } return Math.round(t*10)/10; }
+function scoreChart(F){
+  const ds=Object.keys(F).sort(); if(!ds.length) return ''; const pts=ds.map(d=>({d, v:rawScore(F[d]), t:F[d].total}));
+  const W=560,H=170,L=34,R=12,T=14,B=28, x=i=>L+(ds.length===1?(W-L-R)/2:i*(W-L-R)/(ds.length-1)), y=v=>T+(1-v/35)*(H-T-B);
+  const band=(v,l,c)=>`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="${c}" stroke-dasharray="4 4"/><text x="${W-R}" y="${y(v)-3}" text-anchor="end" font-size="11" fill="${c}">${l}</text>`;
+  return `<div class="card"><b>📈 점수 변화</b> <span class="sub">원점수 /35 (Q1~2 발음·억양 평균 + Q3~10 + Q11) · 등급선은 대략적인 기준</span>
+  <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;margin-top:6px">
+   ${band(35,'AH 35',"#a78bfa")}${band(31,'AM ≈31',"#60a5fa")}${band(28,'AL ≈28',"#34c38f")}${band(23,'IH ≈23',"#f1b44c")}
+   <polyline fill="none" stroke="#4f9cf9" stroke-width="3" points="${pts.map((p,i)=>x(i)+','+y(p.v)).join(' ')}"/>
+   ${pts.map((p,i)=>`<circle cx="${x(i)}" cy="${y(p.v)}" r="5" fill="#4f9cf9"/><text x="${x(i)}" y="${y(p.v)-9}" text-anchor="middle" font-size="12" fill="#eef2f6" font-weight="700">${p.v}</text><text x="${x(i)}" y="${H-8}" text-anchor="middle" font-size="11" fill="#94a3b8">${p.d.slice(5).replace('-','/')}</text>`).join('')}
+  </svg></div>`;
+}
+// ---------- ⑤ 대본 따라 말하기 (문장마다 듣고 → 따라 말하면 빠진 단어 표시) ----------
+function toks(t){ return (t.toLowerCase().replace(/[’']/g,"'").match(/[a-z0-9']+/g)||[]); }
+function missWords(exp,got){ const a=toks(exp), b=toks(got), n=a.length, m=b.length, D=Array.from({length:n+1},()=>new Array(m+1).fill(0));
+  for(let i=n-1;i>=0;i--) for(let j=m-1;j>=0;j--) D[i][j]= a[i]===b[j]?D[i+1][j+1]+1:Math.max(D[i+1][j],D[i][j+1]);
+  const keep=new Array(n).fill(false); let i=0,j=0; while(i<n&&j<m){ if(a[i]===b[j]){keep[i]=true;i++;j++;} else if(D[i+1][j]>=D[i][j+1]) i++; else j++; }
+  return {words:a, keep, ratio: n? keep.filter(Boolean).length/n : 1}; }
+function listenOnce(){ return new Promise(res=>{ const SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(!SR) return res({err:'no-sr'});
+  const r=new SR(); r.lang='en-US'; r.interimResults=false; r.maxAlternatives=1; let txt='', done=false; const fin=e=>{ if(!done){done=true; res({text:txt.trim(), err:e});} };
+  r.onresult=e=>{ for(let i=e.resultIndex;i<e.results.length;i++) if(e.results[i].isFinal) txt+=e.results[i][0].transcript+' '; }; r.onerror=e=>fin(e.error); r.onend=()=>fin(); setTimeout(()=>{ try{r.stop();}catch(_){} },25000); try{ r.start(); }catch(e){ fin('start'); } }); }
+async function shadowScript(script,q){
+  const sents=(script.replace(/[↗↘]/g,'').replace(/\s*\/\s*/g,' ').replace(/\([^)]*\)/g,'').match(/[^.?!]+[.?!]+/g)||[script]).map(x=>x.trim()).filter(x=>x.length>2);
+  let ov=document.getElementById('shadowOv'); if(!ov){ ov=document.createElement('div'); ov.id='shadowOv'; document.body.appendChild(ov); }
+  let k=0, stop=false; const close=()=>{ stop=true; speechSynthesis.cancel(); ov.remove(); };
+  const draw=(body,btns)=>{ ov.innerHTML=`<div class="shbox"><div class="fbh"><b>🎤 따라 말하기 · Q${q}</b><span class="sub" style="margin-left:auto">${k+1} / ${sents.length}</span></div><div class="shs">${esc(sents[k])}</div><div class="shres">${body||''}</div><div class="shbtns">${btns||''}<button id="shClose">닫기</button></div></div>`; $('shClose').onclick=close; };
+  const step=async()=>{ if(stop) return; if(k>=sents.length){ draw('<b class="ok">끝! 전체를 한 번 이어서 말해 보세요 👍</b>',''); return; }
+    draw('🔊 듣기…',''); await new Promise(r=>{ speakEN(sents[k],false); const iv=setInterval(()=>{ if(!speechSynthesis.speaking){ clearInterval(iv); r(); } },200); setTimeout(()=>{clearInterval(iv);r();},15000); });
+    if(stop) return; draw('🎙 따라 말하세요…',''); const r=await listenOnce(); if(stop) return;
+    if(r.err==='no-sr'){ draw('이 브라우저는 음성 인식이 안 돼요. 휴대폰 크롬에서 해 주세요.',''); return; }
+    const d=missWords(sents[k], r.text||''); const html=d.words.map((w,i)=>d.keep[i]?`<span class="ok">${w}</span>`:`<span class="miss">${w}</span>`).join(' ');
+    const good=d.ratio>=0.85; draw(`<div class="sub">들린 말: ${esc(r.text||'(못 들음)')}</div><div style="margin-top:4px">${html}</div><div style="margin-top:4px">${good?'<b class="ok">좋아요 ✔</b>':'<b class="bad">빨간 단어를 다시</b>'} (${Math.round(d.ratio*100)}%)</div>`,
+      `<button id="shAgain">🔁 다시</button><button id="shNext" class="${good?'on':''}">다음 ▶</button>`);
+    $('shAgain').onclick=()=>step(); $('shNext').onclick=()=>{ k++; step(); };
+    if(good) setTimeout(()=>{ if(!stop && $('shNext')){ k++; step(); } },1500); };
+  step();
 }
 renderDay(); loadRecs();
 document.addEventListener('keydown',e=>{ if(e.key==='Escape' && running){ $('stopBtn').click(); }
