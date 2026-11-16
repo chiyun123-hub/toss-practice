@@ -79,5 +79,466 @@ const FEEDBACK = {
     ["A man is sitting on a chair.","한 남자가 의자에 앉아 있어요|남자가 의자에 앉아 있어요"],
     ["It's a good idea for children to have smartphones.","아이들이 스마트폰을 갖는 것은 좋은 생각이에요|아이들이 스마트폰을 가지는 건 좋은 생각이에요"]
   ]
+},
+"2026-11-16-2": {
+ "title": "01일차 모의고사 2회차 (Day 2 세트 재응시)",
+ "total": "IM3~IH (약 130~140) 추정 — 1회차와 원점수 같음, 시간 채우기는 확실히 좋아짐",
+ "urgent": "Q3·Q4 사진 묘사가 단어 반복(wearing wearing watching…)으로 끊김 → 위치 + 사람 + be ~ing 한 문장씩 4개 고정 틀",
+ "retry": "Q3 → Q4 → Q11 → Q2 → Q10 → Q7 → Q9 → Q5 → Q6",
+ "q": {
+  "1": {
+   "score": "발음 3 · 억양 2",
+   "fix": [
+    "거의 완벽 ✅ — 1회차에서 빠뜨린 부분도 다 읽음",
+    "work → walk, monthly → mostly, students → stunts 로 들림",
+    "후반 1~2초 쉼 두 번 → 의미 단위(/)에서만 끊기",
+    "나열·문장 끝 ↘가 아직 평평하거나 올라감"
+   ],
+   "script": "Are you tired of spending hours in traffic every morning? ↗ / Then it's time to try City Bike Share. ↘ / With over three hundred stations / across the downtown area, / you can pick up a bike, ↗ ride to work, ↗ and drop it off near your office. ↘ / Monthly passes are available for students, ↗ seniors, ↗ and full-time employees. ↘ / Visit our website today / and get your first week free. ↘",
+   "words": [
+    "work (워ㄹㅋ, 입 작게)",
+    "monthly (먼th리)",
+    "students (스튜-든츠)"
+   ],
+   "grammar": "나열 A↗ B↗ and C↘ · 마침표 앞은 반드시 ↘"
+  },
+  "2": {
+   "score": "발음 2 · 억양 2",
+   "fix": [
+    "seven o'clock → 7th 로 읽음",
+    "near Exit Twelve 통째로 무너짐 (East East Trev)",
+    "If possible → Impossible",
+    "coastal → Costa, Drivers → Drives",
+    "마지막 so stay tuned 빠뜨림 + 'Good!' 혼잣말 ✘",
+    "속도 86wpm으로 느림 → 끊김 줄이기"
+   ],
+   "script": "Good morning, ↘ and welcome to the seven o'clock traffic report / on City Radio. ↘ / Drivers heading north on Highway 9 / should expect delays / because of road construction / near Exit Twelve. ↘ / If possible, / take Maple Avenue, ↗ Lake Road, ↗ or the Coastal Highway instead. ↘ / Traffic is moving smoothly / on all bridges into the city. ↘ / We'll have another update in fifteen minutes, / so stay tuned. ↘",
+   "words": [
+    "Exit Twelve",
+    "If possible",
+    "coastal (코우스틀)",
+    "drivers",
+    "stay tuned"
+   ],
+   "grammar": "시각 seven o'clock (7th ✘) · 녹음 중 혼잣말 금지 — 끝나면 그냥 멈추기"
+  },
+  "3": {
+   "score": "2",
+   "fix": [
+    "'wearing wearing watching watching watching' 반복 → 단어가 안 떠오르면 더 쉬운 동사(is standing / is holding)로 바꾸기",
+    "30초 중 18초만 말함",
+    "가운데 여자·계산대·컵 등 묘사 안 함"
+   ],
+   "script": "This picture was taken in a coffee shop. On the left, a man wearing a beanie is leaning on the counter and looking at his phone. In the middle, a woman with long hair is standing at the counter, waiting for her order. On the right, an older man and a woman in a plaid shirt are talking at the register. There are some cups on the counter, and it looks like a relaxed afternoon.",
+   "words": [
+    "beanie",
+    "lean on the counter",
+    "register",
+    "waiting for her order",
+    "plaid shirt"
+   ],
+   "grammar": "위치 + 사람 + be ~ing (On the left, a man is leaning on ~) · 모르는 단어는 버리고 쉬운 동사로"
+  },
+  "4": {
+   "score": "2",
+   "fix": [
+    "shelves → sherbet 로 들림",
+    "실내 시장인데 'sunny day' ✘ → 사진에 있는 것만",
+    "headscarf 단어 대신 tissue → 모르면 a woman wearing a scarf",
+    "The fruit are ✘ → Some fruits are"
+   ],
+   "script": "This picture was taken at an indoor market. In the front, some strawberries and blueberries are displayed in small boxes with price signs. Next to them, there are some lettuce and tomatoes. On the right, a woman wearing a headscarf is looking at the vegetables. In the background, some people are walking down the aisle under a glass roof.",
+   "words": [
+    "indoor market",
+    "price sign",
+    "shelves (셸브즈)",
+    "headscarf",
+    "aisle (아일)"
+   ],
+   "grammar": "진열 = are displayed (수동태) · There are + 복수 · fruit 셀 때는 fruits / some fruit"
+  },
+  "5": {
+   "score": "2",
+   "fix": [
+    "6초 침묵 → 바로 시작 ✅ 크게 좋아짐",
+    "at 3 hours in a day ✘ → for about three hours a day",
+    "I mostly use watching ✘ → I mostly use it to watch"
+   ],
+   "script": "I use my smartphone for about three hours a day. I mostly use it to watch videos and to call my parents.",
+   "words": [
+    "for about ~ a day",
+    "use it to + 동사"
+   ],
+   "grammar": "기간 for about · 빈도 a day · use it to 동사원형"
+  },
+  "6": {
+   "score": "2",
+   "fix": [
+    "이유가 'so watching some video' 로 깨짐 → because I can ~",
+    "before I got to sleep → before I go to sleep (습관은 현재형)"
+   ],
+   "script": "My favorite app is YouTube, because I can relax by watching short videos before I go to sleep. I also learn a lot from engineering channels.",
+   "words": [
+    "relax by ~ing",
+    "before I go to sleep"
+   ],
+   "grammar": "because + 주어 + 동사 · 습관은 현재형 (go, got ✘)"
+  },
+  "7": {
+   "score": "2",
+   "fix": [
+    "첫 문장 'It's a good idea for young children to have smartphones' ✅ 고친 틀 그대로 씀",
+    "because because 반복",
+    "'his vocabulary skill is very high for the me' 구조 깨짐",
+    "끝이 'to have some'으로 잘림 → 마무리 한 문장"
+   ],
+   "script": "I think it's a good idea for young children to have smartphones. For example, my younger brother studies English words with an app on his smartphone, and his vocabulary is much better than mine was at his age. So I think smartphones can be really helpful for young children.",
+   "words": [
+    "younger brother",
+    "much better than mine",
+    "be helpful for"
+   ],
+   "grammar": "비교: better than mine (for the me ✘) · help + 사람 + 동사원형"
+  },
+  "8": {
+   "score": "3 ✅",
+   "fix": [
+    "정답 정보는 다 맞음",
+    "interviewer = 면접관 → 지원자는 the first interview is with ~",
+    "Jason → Johnson 으로 들림"
+   ],
+   "script": "The first interview is at 9:30 a.m. with Jason Choi, who currently works at Blue Mobile.",
+   "words": [
+    "interviewer(면접관) vs applicant(지원자)",
+    "Jason (제이슨)"
+   ],
+   "grammar": "The first interview is with + 사람 · at + 시각"
+  },
+  "9": {
+   "score": "2",
+   "fix": [
+    "'So you're free at one thirty'처럼 다음 일정까지 말한 건 ✅ 좋아짐",
+    "Kevin Moore's interview / has been canceled 문장이 'was is what is canceled'로 무너짐",
+    "eleven thirty → elementary, one thirty → one story 로 들림 (th 발음)",
+    "※ 음성인식이 섞였을 수 있어 실제보다 조금 낮게 들렸을 가능성 있음"
+   ],
+   "script": "Actually, I'm afraid that's not right. Kevin Moore's interview at 11:30 has been canceled, so you'll be free until the next interview at 1:30.",
+   "words": [
+    "has been canceled",
+    "thirty (써-리)",
+    "I'm afraid that's not right"
+   ],
+   "grammar": "현재완료 수동태 has been canceled — was is ✘, 한 동사만"
+  },
+  "10": {
+   "score": "2",
+   "fix": [
+    "두 지원자 다 말함 ✅ 1회차보다 좋아짐",
+    "'his job is Blue Mobile' ✘ → he currently works at",
+    "sales mobile → sales manager, Green Fools → Green Foods",
+    "nine thirty → 9 story (th)",
+    "the Brain Song ✘ → 이름 앞 the 빼기"
+   ],
+   "script": "There are two applicants for the sales manager position. First, Jason Choi, who currently works at Blue Mobile, has an interview at 9:30 a.m. Second, Brian Song from Green Foods will be interviewed at 3:00 p.m. Kevin Moore also applied, but his interview has been canceled.",
+   "words": [
+    "works at ~",
+    "applicant",
+    "be interviewed"
+   ],
+   "grammar": "There are two applicants for ~ · First, ~ Second, ~ · 이름 앞 관사 ✘"
+  },
+  "11": {
+   "score": "3 / 5",
+   "fix": [
+    "47.8초·99단어로 1회차(73단어)보다 길어짐 ✅",
+    "learn → run, foreign → 4-inch 로 계속 들림 (가장 큰 감점)",
+    "'so … but … because … so' 한 문장으로 끝없이 이어짐 → 마침표 찍고 새 문장",
+    "경험(8살에 영어 시작 → 유럽 여행에서 외국 친구와 대화)은 좋음 → 결과를 짧게 정리"
+   ],
+   "script": "I agree that students should start learning a foreign language in elementary school. The main reason is that young children pick up new sounds much more easily. For example, in my case, I started learning English when I was eight. At first it was very hard to understand, but because I started early, I got used to it. Two years ago, when I traveled around Europe, I could easily catch up with my foreign friends in conversation. That's why I believe learning a foreign language early is really helpful.",
+   "words": [
+    "foreign (f-오린, 윗니로 아랫입술)",
+    "learn (l-얼ㄴ)",
+    "get used to",
+    "catch up with",
+    "travel around Europe"
+   ],
+   "grammar": "한 문장 = 한 생각 · 마침표 → 다음 문장 · 의견 → The main reason → For example, in my case → That's why · ⚠️ 통째 암기 금지"
+  }
+ },
+ "notes": [
+  {
+   "q": 1,
+   "type": "발음",
+   "said": "work → walk 로 들림",
+   "fix": "work",
+   "why": "work는 입을 작게 오므린 '워ㄹㅋ'(ɜːr), walk는 크게 벌린 '워ㅋ'. r 소리를 살짝 넣기."
+  },
+  {
+   "q": 1,
+   "type": "발음",
+   "said": "monthly → mostly 로 들림",
+   "fix": "monthly",
+   "why": "n-th: 먼(n) 다음 혀끝을 이 사이에 살짝 → th리. s로 새지 않게."
+  },
+  {
+   "q": 2,
+   "type": "읽기",
+   "said": "welcome to 7th traffic report",
+   "fix": "welcome to the seven o'clock traffic report",
+   "why": "7:00 = seven o'clock. 서수(seventh)로 읽지 않기. 앞에 the."
+  },
+  {
+   "q": 2,
+   "type": "발음",
+   "said": "near East East Trev",
+   "fix": "near Exit Twelve",
+   "why": "Exit = 엑-싯(g 소리 아님 egzit 가능), Twelve = 트웰브(v로 끝). 숫자는 모르면 천천히라도 정확하게."
+  },
+  {
+   "q": 2,
+   "type": "읽기",
+   "said": "Impossible take Maple Avenue",
+   "fix": "If possible, take Maple Avenue",
+   "why": "If possible, 다음에 쉼표 쉬기 → 붙여 읽으면 impossible로 들림."
+  },
+  {
+   "q": 2,
+   "type": "발음",
+   "said": "Costa Highway",
+   "fix": "Coastal Highway",
+   "why": "coastal = 코우스틀. 끝 -tal을 '틀'로 확실히."
+  },
+  {
+   "q": 3,
+   "type": "문법",
+   "said": "man wearing wearing watching watching watching is wearing a hat",
+   "fix": "A man wearing a hat is looking at his phone.",
+   "why": "단어가 막히면 같은 단어 반복 대신 쉬운 동사(looking at / holding)로 바꾸고 문장을 끝내기. 문장 = 주어 + be ~ing."
+  },
+  {
+   "q": 3,
+   "type": "표현",
+   "said": "is using a circle",
+   "fix": "is holding a phone",
+   "why": "모르는 물건은 아는 가장 쉬운 단어로(phone, cup, bag)."
+  },
+  {
+   "q": 3,
+   "type": "문법",
+   "said": "Two people are talking to all of them",
+   "fix": "Two people are talking to each other.",
+   "why": "서로 = each other."
+  },
+  {
+   "q": 4,
+   "type": "문법",
+   "said": "The fruit are displayed on the sherbet",
+   "fix": "Some fruits are displayed on the shelves.",
+   "why": "fruit 단수면 is, 여러 종류면 fruits are. shelves = 셸브즈 (shelf의 복수)."
+  },
+  {
+   "q": 4,
+   "type": "표현",
+   "said": "a woman wearing some tissue",
+   "fix": "a woman wearing a headscarf",
+   "why": "머리 스카프 = headscarf. 모르면 a scarf."
+  },
+  {
+   "q": 4,
+   "type": "내용",
+   "said": "it looks like sunny day",
+   "fix": "It looks like a busy market.",
+   "why": "실내 사진엔 날씨 말하지 않기 — 보이는 것만. 셀 수 있는 명사 앞 a."
+  },
+  {
+   "q": 5,
+   "type": "문법",
+   "said": "I usually use my smartphone at 3 hours in a day",
+   "fix": "I usually use my smartphone for about three hours a day.",
+   "why": "기간은 for (at ✘), 빈도는 a day (in a day ✘)."
+  },
+  {
+   "q": 5,
+   "type": "문법",
+   "said": "I mostly use watching some video",
+   "fix": "I mostly use it to watch videos.",
+   "why": "use it to + 동사원형. video는 셀 수 있으니 videos."
+  },
+  {
+   "q": 6,
+   "type": "문법",
+   "said": "I usually use the YouTube so watching some video and before I got to sleep",
+   "fix": "I usually watch YouTube videos before I go to sleep.",
+   "why": "앱 이름 앞 the ✘. 습관은 현재형 go (got ✘). so 뒤엔 주어+동사."
+  },
+  {
+   "q": 7,
+   "type": "문법",
+   "said": "his vocabulary skill is very high for the me",
+   "fix": "His vocabulary is much better than mine.",
+   "why": "비교는 better than + mine. 'for the me' 같은 형태는 없음."
+  },
+  {
+   "q": 7,
+   "type": "문법",
+   "said": "he is studying smart phone vocabulary in English",
+   "fix": "He studies English words with an app on his smartphone.",
+   "why": "평소 습관은 현재형 studies. '스마트폰으로' = with an app on his smartphone."
+  },
+  {
+   "q": 8,
+   "type": "표현",
+   "said": "First interviewer is Johnson Choi",
+   "fix": "The first interview is with Jason Choi.",
+   "why": "interviewer = 면접관. 지원자와의 면접은 interview is with + 사람."
+  },
+  {
+   "q": 9,
+   "type": "문법",
+   "said": "Kevin Mora was is what is canceled",
+   "fix": "Kevin Moore's interview has been canceled.",
+   "why": "동사는 하나만: has been canceled. 사람이 아니라 면접(interview)이 취소됨."
+  },
+  {
+   "q": 9,
+   "type": "발음",
+   "said": "eleven thirty → elementary / one thirty → one story",
+   "fix": "eleven thirty / one thirty",
+   "why": "thirty = 혀끝을 이 사이에 → 써-리. s나 st로 내지 않기."
+  },
+  {
+   "q": 10,
+   "type": "표현",
+   "said": "his job is Blue Mobile",
+   "fix": "He currently works at Blue Mobile.",
+   "why": "job = 직업. 회사는 works at + 회사."
+  },
+  {
+   "q": 10,
+   "type": "문법",
+   "said": "the Brain Song is also sales mobile",
+   "fix": "Brian Song is also applying for the sales manager position.",
+   "why": "이름 앞 the ✘. 표에 있는 단어(manager)는 그대로 읽기."
+  },
+  {
+   "q": 11,
+   "type": "발음",
+   "said": "foreign → 4-inch 로 들림",
+   "fix": "foreign",
+   "why": "f는 윗니를 아랫입술에 대고 바람 → 'f오-린'. 끝에 ch 소리 없음."
+  },
+  {
+   "q": 11,
+   "type": "발음",
+   "said": "learn → run 으로 들림 (2회 연속)",
+   "fix": "learn",
+   "why": "l: 혀끝을 윗잇몸에 붙이고 시작, 모음은 입 작게 '얼'. 이번 주 최우선 발음."
+  },
+  {
+   "q": 11,
+   "type": "문법",
+   "said": "in my case I run a 4-inch language in English first round is elementary school and the age is 8",
+   "fix": "In my case, I started learning English when I was eight.",
+   "why": "start learning ~ when I was 나이. 한 문장 = 한 생각."
+  },
+  {
+   "q": 11,
+   "type": "표현",
+   "said": "I did trip with Europe",
+   "fix": "I traveled around Europe.",
+   "why": "'유럽을 여행하다' = travel around Europe / take a trip to Europe."
+  }
+ ],
+ "words": [
+  [
+   "beanie",
+   "비니|털모자"
+  ],
+  [
+   "lean on the counter",
+   "카운터에 기대다|카운터에 기대어 있다"
+  ],
+  [
+   "register",
+   "계산대"
+  ],
+  [
+   "plaid shirt",
+   "체크 셔츠|체크무늬 셔츠"
+  ],
+  [
+   "headscarf",
+   "머리 스카프|스카프"
+  ],
+  [
+   "shelves",
+   "선반들|선반"
+  ],
+  [
+   "aisle",
+   "통로"
+  ],
+  [
+   "price sign",
+   "가격표"
+  ],
+  [
+   "indoor market",
+   "실내 시장"
+  ],
+  [
+   "each other",
+   "서로"
+  ],
+  [
+   "Exit Twelve",
+   "12번 출구"
+  ],
+  [
+   "If possible",
+   "가능하면|가능하다면"
+  ],
+  [
+   "stay tuned",
+   "채널 고정|채널 고정하세요"
+  ],
+  [
+   "get used to",
+   "익숙해지다|~에 익숙해지다"
+  ],
+  [
+   "travel around Europe",
+   "유럽을 여행하다|유럽 여행하다"
+  ],
+  [
+   "foreign language",
+   "외국어"
+  ],
+  [
+   "better than mine",
+   "내 것보다 낫다|나보다 낫다"
+  ],
+  [
+   "A man wearing a beanie is leaning on the counter.",
+   "비니를 쓴 남자가 카운터에 기대어 있어요|비니 쓴 남자가 카운터에 기대 있어요"
+  ],
+  [
+   "Some fruits are displayed on the shelves.",
+   "과일이 선반에 진열되어 있어요|과일들이 선반에 진열돼 있어요"
+  ],
+  [
+   "I mostly use it to watch videos.",
+   "주로 영상 보는 데 써요|주로 영상을 보려고 써요"
+  ],
+  [
+   "He currently works at Blue Mobile.",
+   "그는 현재 블루 모바일에서 일해요|그는 지금 블루 모바일에서 일해요"
+  ],
+  [
+   "I started learning English when I was eight.",
+   "저는 여덟 살 때 영어를 배우기 시작했어요|여덟 살 때 영어를 배우기 시작했어요"
+  ]
+ ]
 }
 };

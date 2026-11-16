@@ -224,7 +224,7 @@ button.say{padding:3px 8px;font-size:14px;margin-left:4px;background:#24364d;bor
 <script src="grammar.js?v=32"></script>
 <script>
 const $=id=>document.getElementById(id);
-const EXAM_VER=39;
+const EXAM_VER=40;
 (function(){ try{ fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{
   if(j && j.v>EXAM_VER && sessionStorage.getItem('examReloadedFor')!==String(j.v) && !running){
     sessionStorage.setItem('examReloadedFor',String(j.v)); location.replace(location.pathname+'?r='+Date.now()+location.hash); } }).catch(()=>{}); }catch(e){} })();
@@ -528,7 +528,7 @@ async function part5(which){
 }
 async function runOne(q){ q=+q; if(q<=2) await part1(q); else if(q<=4) await part2(q); else if(q<=7) await part3(q); else if(q<=10) await part4(q); else await part5(0); }
 // 🔁 재도전: 답안지 날짜의 문제로, 재도전 순서대로 이어서
-async function runRetry(date, qs){
+async function runRetry(date, qs){ date=String(date).slice(0,10);
   if(running) return; const today=Math.round((new Date(seoul().toDateString())-new Date(START+'T00:00:00'))/86400000);
   const idx=Math.round((new Date(date+'T00:00:00')-new Date(START+'T00:00:00'))/86400000); dOff=idx-today; renderDay(); showTab('P');
   running=true; stopFlag=false; $('stopBtn').classList.remove('hide'); MOCK=false;
@@ -562,7 +562,7 @@ document.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>run(null,b.datase
 function PART_OF(q){ return q<=2?'파트1 지문 읽기':q<=4?'파트2 사진 묘사':q<=7?'파트3 질문 답변':q<=10?'파트4 표 보고 답하기':'파트5 의견 제시'; }
 function esc(t){ return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
 // 답안지 날짜 → 그날 앱이 낸 문제 (실전 연습과 같은 계산: START 기준 Day, 파트2~5는 (idx%14)%13, 지문은 idx*2)
-function promptsFor(date){
+function promptsFor(date){ date=String(date).slice(0,10);
   const idx=Math.round((new Date(date+'T00:00:00')-new Date(START+'T00:00:00'))/86400000), n=setOf(idx);
   const np=PASSAGES.length, k=((idx*2)%np+np)%np, sc=P2_SCENES[n], p3=P3_SETS[n], d4=P4_DAYS[n], p5=P5_DAYS[n];
   const P={1:PASSAGES[k].text, 2:PASSAGES[(k+1)%np].text, 3:'사진 주제: '+sc[0], 4:'사진 주제: '+sc[1], 11:p5[0]};
@@ -644,7 +644,7 @@ function scoreChart(F){
   <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;margin-top:6px">
    ${band(35,'AH 35',"#a78bfa")}${band(31,'AM ≈31',"#60a5fa")}${band(28,'AL ≈28',"#34c38f")}${band(23,'IH ≈23',"#f1b44c")}
    <polyline fill="none" stroke="#4f9cf9" stroke-width="3" points="${pts.map((p,i)=>x(i)+','+y(p.v)).join(' ')}"/>
-   ${pts.map((p,i)=>`<circle cx="${x(i)}" cy="${y(p.v)}" r="5" fill="#4f9cf9"/><text x="${x(i)}" y="${y(p.v)-9}" text-anchor="middle" font-size="12" fill="#eef2f6" font-weight="700">${p.v}</text><text x="${x(i)}" y="${H-8}" text-anchor="middle" font-size="11" fill="#94a3b8">${p.d.slice(5).replace('-','/')}</text>`).join('')}
+   ${pts.map((p,i)=>`<circle cx="${x(i)}" cy="${y(p.v)}" r="5" fill="#4f9cf9"/><text x="${x(i)}" y="${y(p.v)-9}" text-anchor="middle" font-size="12" fill="#eef2f6" font-weight="700">${p.v}</text><text x="${x(i)}" y="${H-8}" text-anchor="middle" font-size="11" fill="#94a3b8">${p.d.slice(5,10).replace('-','/')+(p.d.length>10?' ('+p.d.slice(11)+'회)':'')}</text>`).join('')}
   </svg></div>`;
 }
 // ---------- ⑤ 대본 따라 말하기 (문장마다 듣고 → 따라 말하면 빠진 단어 표시) ----------
