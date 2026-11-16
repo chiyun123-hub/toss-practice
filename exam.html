@@ -47,15 +47,16 @@ ul.links li{margin:5px 0;line-height:1.45}
 #stage .dirs{background:#f8fafc;color:#0f172a;border-radius:8px;padding:12px;line-height:1.6;font-size:15px}
 #stage .qtext{background:#fff;color:#0f172a;border-radius:8px;padding:12px;font-size:17px;line-height:1.6}
 #stage .qctx{color:var(--mut);font-size:13px;margin-bottom:6px}
-#stage .doc{background:#fff;color:#111;border-radius:6px;padding:14px 12px;box-shadow:0 2px 8px rgba(0,0,0,.35);font-family:Georgia,'Times New Roman',serif}
-#stage .doc .dtitle{text-align:center;font-weight:800;font-size:17px;margin-bottom:4px}
-#stage .doc .dinfo{text-align:center;font-size:13px;color:#333;margin-bottom:10px;line-height:1.5}
-#stage .doc table{font-size:13.5px;border-collapse:collapse;width:100%}
-#stage .doc th{background:#fff;color:#111;border:0;border-bottom:2px solid #111;text-align:left;padding:5px 6px}
-#stage .doc td{border:0;border-bottom:1px solid #ccc;padding:6px;color:#111}
-#stage .doc td.c0{white-space:nowrap;font-weight:600}
+.doc{background:#fff;color:#111;border-radius:6px;padding:14px 12px;box-shadow:0 2px 8px rgba(0,0,0,.35);font-family:Georgia,'Times New Roman',serif}
+.doc .dtitle{text-align:center;font-weight:800;font-size:17px;margin-bottom:4px}
+.doc .dinfo{text-align:center;font-size:13px;color:#333;margin-bottom:10px;line-height:1.5}
+.doc table{font-size:13.5px;border-collapse:collapse;width:100%}
+.doc th{background:#fff;color:#111;border:0;border-bottom:2px solid #111;text-align:left;padding:5px 6px}
+.doc td{border:0;border-bottom:1px solid #ccc;padding:6px;color:#111}
+.doc td.c0{white-space:nowrap;font-weight:600}
 .fb ul{margin:4px 0 6px;padding-left:18px} .fb li{margin:2px 0}
 .fbh{display:flex;gap:8px;align-items:center;margin-bottom:4px} .fbs{margin-left:auto;background:#24364d;color:#bfdbfe;border-radius:999px;padding:2px 10px;font-size:13px;font-weight:700}
+.fbq{background:#f8fafc;color:#0f172a;border-radius:6px;padding:8px 10px;line-height:1.55;font-size:14.5px}
 .fbk{color:var(--acc);font-size:12px;font-weight:700;margin-top:8px}
 .fbscript{background:#0f1720;border-left:3px solid var(--acc);padding:8px 10px;border-radius:6px;line-height:1.6;font-size:14.5px}
 .hide{display:none}
@@ -201,7 +202,7 @@ ul.links li{margin:5px 0;line-height:1.45}
 <script src="feedback.js?v=26"></script>
 <script>
 const $=id=>document.getElementById(id);
-const EXAM_VER=28;
+const EXAM_VER=29;
 (function(){ try{ fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{
   if(j && j.v>EXAM_VER && sessionStorage.getItem('examReloadedFor')!==String(j.v) && !running){
     sessionStorage.setItem('examReloadedFor',String(j.v)); location.replace(location.pathname+'?r='+Date.now()+location.hash); } }).catch(()=>{}); }catch(e){} })();
@@ -471,14 +472,25 @@ document.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>run(null,b.datase
 // ---------- 📝 답안지 ----------
 function PART_OF(q){ return q<=2?'파트1 지문 읽기':q<=4?'파트2 사진 묘사':q<=7?'파트3 질문 답변':q<=10?'파트4 표 보고 답하기':'파트5 의견 제시'; }
 function esc(t){ return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+// 답안지 날짜 → 그날 앱이 낸 문제 (실전 연습과 같은 계산: START 기준 Day, 파트2~5는 (idx%14)%13, 지문은 idx*2)
+function promptsFor(date){
+  const idx=Math.round((new Date(date+'T00:00:00')-new Date(START+'T00:00:00'))/86400000), n=Math.max(0,idx)%14%13;
+  const np=PASSAGES.length, k=((idx*2)%np+np)%np, sc=P2_SCENES[n], p3=P3_SETS[n], d4=P4_DAYS[n], p5=P5_DAYS[n];
+  const P={1:PASSAGES[k].text, 2:PASSAGES[(k+1)%np].text, 3:'사진 주제: '+sc[0], 4:'사진 주제: '+sc[1], 11:p5[0]};
+  for(let i=0;i<3;i++){ P[5+i]=p3.ctx+' — '+p3.q[i]; P[8+i]=d4.q[i]+(i===2?' (두 번 들려줌)':''); }
+  return {P, table:P4_TABLES[d4.t]};
+}
 function renderFB(){
   const F=(typeof FEEDBACK!=='undefined')?FEEDBACK:{}; const dates=Object.keys(F).sort().reverse(); const sel=$('fbDate');
   if(!dates.length){ $('fbBody').innerHTML='<div class="card sub">아직 채점된 모의고사가 없어요.</div>'; return; }
   if(!sel.options.length){ sel.innerHTML=dates.map(d=>`<option value="${d}">${d} · ${F[d].title||''}</option>`).join(''); sel.onchange=renderFB; }
   const f=F[sel.value||dates[0]];
   let h=`<div class="card"><b>총점 추정:</b> ${esc(f.total)}<br><b>가장 급한 약점:</b> ${esc(f.urgent)}<br><b>재도전 순서:</b> ${esc(f.retry||'')}</div>`;
+  const pr=promptsFor(sel.value||dates[0]); const PQ=Object.assign({}, pr.P, f.prompts||{});
   for(let q=1;q<=11;q++){ const x=f.q[q]; if(!x) continue;
+    if(q===8) h+=`<div class="card"><div class="fbk" style="margin-top:0">파트4 표 (Q8~10 공통)</div><div style="margin-top:6px">${tableHTML(pr.table)}</div></div>`;
     h+=`<div class="card fb"><div class="fbh"><b>Q${q}</b> <span class="sub">${PART_OF(q)}</span><span class="fbs">${esc(x.score)}</span></div>
+      <div class="fbk">문제</div><div class="fbq">${esc(PQ[q]||'')}</div>
       <div class="fbk">고칠 점</div><ul>${x.fix.map(t=>`<li>${esc(t)}</li>`).join('')}</ul>
       <div class="fbk">대본 (AH · 구조 참고용, 통째 암기 ✘)</div><div class="fbscript">${esc(x.script)}</div>
       <div class="fbk">암기 단어</div><div>${x.words.map(w=>`<span class="tag" style="font-size:13px;color:var(--fg)">${esc(w)}</span>`).join(' ')}</div>
