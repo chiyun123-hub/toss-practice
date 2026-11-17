@@ -237,7 +237,7 @@ button.say{padding:3px 8px;font-size:14px;margin-left:4px;background:#24364d;bor
 <script src="jake.js?v=42"></script>
 <script>
 const $=id=>document.getElementById(id);
-const EXAM_VER=44;
+const EXAM_VER=45;
 (function(){ try{ fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{
   if(j && j.v>EXAM_VER && sessionStorage.getItem('examReloadedFor')!==String(j.v) && !running){
     sessionStorage.setItem('examReloadedFor',String(j.v)); location.replace(location.pathname+'?r='+Date.now()+location.hash); } }).catch(()=>{}); }catch(e){} })();
@@ -433,6 +433,7 @@ let RETRY=false; // 재도전 중인지 → 파일 이름 _재도전, 드라이�
 function head(qtxt,title){ return `<div class="tbar"><span>TOEIC Speaking</span><span>${qtxt}</span></div><div class="ttitle">${title}</div>`; }
 async function prepare(sec){ await say('Begin preparing now.'); if(stopFlag) return; await countdown(sec,'PREPARATION TIME','prep'); }
 // 파트 안내 화면 (실제 시험처럼 화면에 띄우고 읽어 줌). 한 문제만 연습할 때는 건너뜀
+const has=(only,q)=>!only||(Array.isArray(only)?only.includes(q):only===q); // only = 문항 번호 하나 또는 [묶음]
 async function directions(only,qtxt,title,text){
   if(only) return; show(head(qtxt,title)+`<div class="dirs">${text}</div>`);
   $('phase').textContent='DIRECTIONS'; $('phase').className=''; $('timer').textContent='--';
@@ -441,7 +442,7 @@ async function directions(only,qtxt,title,text){
 async function part1(only){
   const n=PASSAGES.length, k=((dayIdx()*2)%n+n)%n; const ps=[PASSAGES[k],PASSAGES[(k+1)%n]];
   await directions(only,'Questions 1–2','Read a Text Aloud','In this part of the test, you will read aloud the text on the screen. You will have 45 seconds to prepare. Then you will have 45 seconds to read the text aloud.');
-  for(let i=0;i<2 && !stopFlag;i++){ if(only && only!==i+1) continue;
+  for(let i=0;i<2 && !stopFlag;i++){ if(!has(only,i+1)) continue;
     show(head(`Question ${i+1} of 11`,'Read a Text Aloud')+`<div class="qtext">${ps[i].text}</div>`);
     await prepare(45); if(stopFlag) return;
     await respond(45,`Q${i+1}`,'Begin reading aloud now.');
@@ -496,10 +497,10 @@ let photoPre=null; // 모의고사 시작할 때 사진 두 장을 미리 받아
 function prefetchPhotos(){ const sc=P2_SCENES[dayN()]; photoPre=[pickPhoto(sc[0]), pickPhoto(sc[1])]; }
 async function part2(only){
   const sc=P2_SCENES[dayN()];
-  const pre= photoPre || [only&&only!==3?null:pickPhoto(sc[0]), only&&only!==4?null:pickPhoto(sc[1])]; photoPre=null;
+  const pre= photoPre || [has(only,3)?pickPhoto(sc[0]):null, has(only,4)?pickPhoto(sc[1]):null]; photoPre=null;
   await directions(only,'Questions 3–4','Describe a Picture','In this part of the test, you will describe the picture on your screen in as much detail as you can. You will have 45 seconds to prepare your response. Then you will have 30 seconds to speak about the picture.');
   for(let i=0;i<2 && !stopFlag;i++){
-    const q=i+3; if(only && only!==q) continue;
+    const q=i+3; if(!has(only,q)) continue;
     show(head(`Question ${q} of 11`,'Describe a Picture')+'<p class="sub">사진 불러오는 중…</p>');
     const prev=recs.find(r=>r.img && r.blob.type.startsWith('image') && r.name.startsWith(`Day${dayNo()}_Q${q}_사진`)); // 재도전이면 지난번과 같은 사진
     const p= prev ? {src:URL.createObjectURL(prev.blob), credit:'재도전 — 지난번과 같은 사진'} : await pre[i]; if(stopFlag) return;
@@ -514,7 +515,7 @@ async function part3(only){
   await directions(only,'Questions 5–7','Respond to Questions','In this part of the test, you will answer three questions. You will have three seconds to prepare after you hear each question. You will have 15 seconds to respond to Questions 5 and 6, and 30 seconds to respond to Question 7.');
   const intro=`Imagine that ${s.ctx.charAt(0).toLowerCase()+s.ctx.slice(1)} You have agreed to participate in a telephone interview.`;
   if(!stopFlag){ show(head('Questions 5–7','Respond to Questions')+`<div class="qtext">${intro}</div>`); $('phase').textContent=''; $('timer').textContent='--'; await say(intro); }
-  for(let i=0;i<3 && !stopFlag;i++){ if(only && only!==i+5) continue;
+  for(let i=0;i<3 && !stopFlag;i++){ if(!has(only,i+5)) continue;
     show(head(`Question ${i+5} of 11`,'Respond to Questions')+`<div class="qctx">${intro}</div><div class="qtext">${s.q[i]}</div>`);
     await say(s.q[i]); if(stopFlag) return;
     await prepare(3); if(stopFlag) return;
@@ -535,7 +536,7 @@ async function part4(only){
   await say('Begin reading now.'); await countdown(45,'READING TIME','prep'); if(stopFlag) return;
   $('phase').textContent=''; $('timer').textContent='--';
   await say(P4_CALLER[d.t]||'Hi, I have a few questions. Could you help me?'); if(stopFlag) return;
-  for(let i=0;i<3 && !stopFlag;i++){ if(only && only!==i+8) continue;
+  for(let i=0;i<3 && !stopFlag;i++){ if(!has(only,i+8)) continue;
     show(head(`Question ${i+8} of 11`,'Respond to Questions Using Information Provided')+tableHTML(t)); // 질문은 화면에 안 나오고 소리로만
     $('phase').textContent='듣기'; await say(d.q[i]); if(i===2 && !stopFlag){ await new Promise(r=>setTimeout(r,900)); await say(d.q[i]); }
     if(stopFlag) return; await prepare(3); if(stopFlag) return;
@@ -564,9 +565,10 @@ async function runRetry(date, qs){ date=String(date).slice(0,10);
   try{ wakeLock=await Promise.race([navigator.wakeLock.request('screen'), new Promise(r=>setTimeout(()=>r(null),1500))]); }catch(e){}
   qs=[...new Set(qs)].sort((a,b)=>a-b); // 파트별로 묶어서 실제 시험 순서대로
   const PN=q=>q<=2?1:q<=4?2:q<=7?3:q<=10?4:5; RETRY=true;
-  try{ let cur=0; for(let i=0;i<qs.length && !stopFlag;i++){ const p=PN(qs[i]);
-      if(p!==cur){ cur=p; const inP=qs.filter(x=>PN(x)===p); show(`<div class="dirs">🔁 재도전 · <b>Part ${p}</b> (${inP.map(x=>'Q'+x).join(', ')})<br><span class="sub">📝 답안지의 고칠 점 하나만 생각하고, 내 말로.</span></div>`); await say('Retry. Part '+p+'.'); await new Promise(r=>setTimeout(r,1200)); if(stopFlag) break; }
-      await runOne(qs[i]); } }
+  try{ for(const p of [1,2,3,4,5]){ if(stopFlag) break; const inP=qs.filter(x=>PN(x)===p); if(!inP.length) continue;
+      show(`<div class="dirs">🔁 재도전 · <b>Part ${p}</b> (${inP.map(x=>'Q'+x).join(', ')})<br><span class="sub">📝 답안지의 고칠 점 하나만 생각하고, 내 말로.</span></div>`); await say('Retry. Part '+p+'.'); await new Promise(r=>setTimeout(r,1200)); if(stopFlag) break;
+      // 한 파트를 한 번에: 파트3 상황 설명·파트4 표 읽기와 전화 인사는 한 번만, 실제 시험 순서대로
+      if(p===1) await part1(inP); else if(p===2) await part2(inP); else if(p===3) await part3(inP); else if(p===4) await part4(inP); else await part5(0); } }
   catch(e){ show('오류: '+e.message); }
   RETRY=false; end(!stopFlag); dOff=0; renderDay();
 }
