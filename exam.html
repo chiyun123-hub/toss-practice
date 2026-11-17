@@ -237,7 +237,7 @@ button.say{padding:3px 8px;font-size:14px;margin-left:4px;background:#24364d;bor
 <script src="jake.js?v=42"></script>
 <script>
 const $=id=>document.getElementById(id);
-const EXAM_VER=43;
+const EXAM_VER=44;
 (function(){ try{ fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{
   if(j && j.v>EXAM_VER && sessionStorage.getItem('examReloadedFor')!==String(j.v) && !running){
     sessionStorage.setItem('examReloadedFor',String(j.v)); location.replace(location.pathname+'?r='+Date.now()+location.hash); } }).catch(()=>{}); }catch(e){} })();
@@ -275,7 +275,7 @@ async function respond(sec,label,cue='Begin speaking now.'){
   const ext=(mr.mimeType||'').includes('mp4')?'m4a':'webm';
   const blob=new Blob(chunks,{type:mr.mimeType||'audio/webm'});
   const base=`Day${dayNo()}_${label}`; const n=recs.filter(r=>!r.img && r.name.replace(/_\d+차/,'').startsWith(base+'.')).length;
-  const rec={name: n? `${base}_${n+1}차.${ext}` : `${base}.${ext}`, blob}; recs.push(rec);
+  let rec; if(RETRY){ const k=recs.filter(r=>r.name.startsWith(base+'_재도전')).length; rec={name:`${base}_재도전${k?k+1:''}.${ext}`, blob, retry:true}; } else rec={name: n? `${base}_${n+1}차.${ext}` : `${base}.${ext}`, blob}; recs.push(rec);
   try{ rec.m=await audioMetrics(blob, sec); }catch(e){}
   saveRecs(); renderRecs();
   if(!MOCK && rec.m) $('stage').insertAdjacentHTML('beforeend', `<div class="card" style="margin-top:10px"><b>방금 답변 점검</b><br>${metricsHTML(rec.m)}</div>`); await beep(500,0.15);
@@ -334,7 +334,7 @@ function renderRecs(){
 }
 // ---- 녹음 보관 (페이지를 닫거나 새로고침해도 남게) ----
 function idb(){ return new Promise((ok,no)=>{ const r=indexedDB.open('toss-recs',1); r.onupgradeneeded=()=>r.result.createObjectStore('r'); r.onsuccess=()=>ok(r.result); r.onerror=()=>no(r.error); }); }
-async function saveRecs(){ try{ const db=await idb(); const tx=db.transaction('r','readwrite'); tx.objectStore('r').put(recs.map(x=>({name:x.name,blob:x.blob,img:!!x.img,m:x.m||null,text:x.text||''})),'list'); }catch(e){} }
+async function saveRecs(){ try{ const db=await idb(); const tx=db.transaction('r','readwrite'); tx.objectStore('r').put(recs.map(x=>({name:x.name,blob:x.blob,img:!!x.img,m:x.m||null,text:x.text||'',saved:!!x.saved,retry:!!x.retry})),'list'); }catch(e){} }
 async function loadRecs(){ try{ const db=await idb(); const v=await new Promise(ok=>{ const q=db.transaction('r').objectStore('r').get('list'); q.onsuccess=()=>ok(q.result); q.onerror=()=>ok(null); }); if(v&&v.length){ recs=v; renderRecs(); $('shareMsg').textContent='이전에 녹음한 '+v.filter(x=>!x.img).length+'개를 불러왔어요. 다 보냈으면 🗑로 비우세요.'; } }catch(e){} }
 // ---- 공유: 갤럭시 크롬은 .webm 음성 공유를 막아서 .wav로 바꿔 보냄 ----
 function wavFrom(buf){ const sr=16000, ch=buf.getChannelData(0), r=buf.sampleRate/sr, n=Math.floor(ch.length/r);
@@ -361,25 +361,38 @@ async function getRoot(){ try{ const db=await idb(); return await new Promise(ok
 async function setRoot(h){ try{ const db=await idb(); db.transaction('r','readwrite').objectStore('r').put(h,'root'); }catch(e){} }
 async function pickRoot(){
   alert('저장 폴더를 한 번만 골라 주세요.\n\n내 PC → Google Drive(G:) → 내 드라이브 → 03_학업 → 토스 공부 → 「모의고사 녹음」 폴더를 선택하고 [폴더 선택] → [파일 편집 허용]을 눌러 주세요.\n다음부터는 자동으로 그날 일차 폴더에 저장돼요.');
-  const h=await window.showDirectoryPicker({id:'toss-root', mode:'readwrite'});
-  if(h.name!==ROOT_NAME && !confirm(`고른 폴더는 「${h.name}」이에요. 「${ROOT_NAME}」 폴더가 아닌데 여기에 저장할까요?`)) throw {name:'AbortError'};
-  await setRoot(h); return h;
+  for(let t=0;t<3;t++){
+    const h=await window.showDirectoryPicker({id:'toss-root', mode:'readwrite'});
+    if(h.name===ROOT_NAME){ await setRoot(h); return h; }
+    alert(`고른 폴더는 「${h.name}」이에요.\n일차 폴더나 다른 폴더가 아니라 「${ROOT_NAME}」 폴더 자체를 골라 주세요.\n(토스 공부 → 모의고사 녹음)`);
+  }
+  throw {name:'AbortError'};
 }
 // 파일 이름의 Day n(계획 기준, Day1=11/15) → 날짜 기준 폴더 (11/16 = 01일차). 11/15 녹음은 01일차로.
 function dayFolderFor(name){ const m=/^Day(\d+)_/.exec(name); const n=m?+m[1]:dayNo(); return DAY_FOLDERS[Math.min(DAY_FOLDERS.length,Math.max(1,n-1))-1]; }
 async function saveFiles(list){
+  list=list.filter(r=>!r.saved); if(!list.length){ $('shareMsg').textContent='✅ 새로 저장할 녹음이 없어요 (전부 드라이브에 있어요).'; return; }
   const files=await prepFiles(list);
   if(window.showDirectoryPicker){
     try{
       let root=await getRoot();
       if(root){ let st=await root.queryPermission({mode:'readwrite'}); if(st!=='granted') st=await root.requestPermission({mode:'readwrite'}); if(st!=='granted') root=null; }
+      if(root && root.name!==ROOT_NAME) root=null; // 예전에 다른 폴더를 골랐으면 다시 고르기
       if(!root) root=await pickRoot();
-      const where=new Set();
-      for(const f of files){ const dn=dayFolderFor(f.name); const dir=await root.getDirectoryHandle(dn,{create:true}); where.add(dn);
-        let fname=f.name; // 같은 이름이 이미 드라이브에 있으면 _2차, _3차 … 로 (덮어쓰지 않음)
-        for(let k=2;k<30;k++){ try{ await dir.getFileHandle(fname); fname=f.name.replace(/(_\d+차)?(\.\w+)$/,`_${k}차$2`); }catch(_){ break; } }
-        const h=await dir.getFileHandle(fname,{create:true}); const w=await h.createWritable(); await w.write(f); await w.close(); }
-      $('shareMsg').innerHTML=`✅ 구글 드라이브 「${root.name}/${[...where].join(', ')}」에 ${files.length}개 저장했어요 (드라이브가 곧 동기화해요).<br>Claude에게 보내려면 그 폴더에서 파일을 선택해 <b>대화창에 끌어다 놓으세요</b>. <a href="#" id="chRoot">저장 폴더 바꾸기</a>`;
+      const where=new Set(); let saved=0, skipped=0;
+      const hashOf=async b=>{ const d=await crypto.subtle.digest('SHA-1', await b.arrayBuffer()); return [...new Uint8Array(d)].map(x=>x.toString(16).padStart(2,'0')).join(''); };
+      const seen={}; // 일차 폴더별로 이미 있는 파일 내용(해시) — 같은 녹음은 다시 저장하지 않음
+      const known=async(dir,dn)=>{ if(seen[dn]) return seen[dn]; const set=new Set();
+        const walk=async(d,depth)=>{ for await (const [nm,h] of d.entries()){ if(h.kind==='file'){ if(/\.(wav|webm|m4a|jpg|txt)$/i.test(nm)){ try{ set.add(await hashOf(await h.getFile())); }catch(_){} } } else if(depth<2) await walk(h,depth+1); } };
+        await walk(dir,0); return seen[dn]=set; };
+      for(let i=0;i<files.length;i++){ const f=files[i], r=list[i]; const dn=dayFolderFor(f.name); const day=await root.getDirectoryHandle(dn,{create:true});
+        const hs=await known(day,dn); const hh=await hashOf(f); if(hs.has(hh)){ skipped++; if(r) r.saved=true; continue; }
+        const sub=(r&&r.retry)||/_재도전|_\d+차/.test(f.name)?'재도전':'모의고사'; const dir=await day.getDirectoryHandle(sub,{create:true}); where.add(dn+'/'+sub);
+        let fname=f.name; // 같은 이름이 있으면 _2, _3 … (덮어쓰지 않음)
+        for(let k=2;k<30;k++){ try{ await dir.getFileHandle(fname); fname=f.name.replace(/(\.\w+)$/,`_${k}$1`); }catch(_){ break; } }
+        const h=await dir.getFileHandle(fname,{create:true}); const w=await h.createWritable(); await w.write(f); await w.close(); hs.add(hh); saved++; if(r) r.saved=true; }
+      saveRecs(); renderRecs();
+      $('shareMsg').innerHTML=(saved?`✅ 「${root.name}/${[...where].join(', ')}」에 새 녹음 ${saved}개 저장했어요.`:'✅ 새로 저장할 녹음이 없어요.')+(skipped?` (이미 드라이브에 있는 ${skipped}개는 건너뜀)`:'')+` 드라이브가 곧 동기화해요.<br>Claude에게 보내려면 그 폴더에서 파일을 선택해 <b>대화창에 끌어다 놓으세요</b>. <a href="#" id="chRoot">저장 폴더 바꾸기</a>`;
       const c=$('chRoot'); if(c) c.onclick=async e=>{ e.preventDefault(); try{ await pickRoot(); $('shareMsg').textContent='저장 폴더를 바꿨어요.'; }catch(_){} };
       return;
     }catch(e){ if(e && e.name==='AbortError'){ $('shareMsg').textContent='저장을 취소했어요.'; return; } console.error(e); }
@@ -416,6 +429,7 @@ function show(html){ $('stage').innerHTML=html; $('stage').classList.remove('sub
 // ---------- parts ----------
 // ---------- 실제 시험 진행 도우미 ----------
 let MOCK=false; // 모의고사(1~11 전체) 중인지
+let RETRY=false; // 재도전 중인지 → 파일 이름 _재도전, 드라이브 '재도전' 폴더
 function head(qtxt,title){ return `<div class="tbar"><span>TOEIC Speaking</span><span>${qtxt}</span></div><div class="ttitle">${title}</div>`; }
 async function prepare(sec){ await say('Begin preparing now.'); if(stopFlag) return; await countdown(sec,'PREPARATION TIME','prep'); }
 // 파트 안내 화면 (실제 시험처럼 화면에 띄우고 읽어 줌). 한 문제만 연습할 때는 건너뜀
@@ -548,9 +562,13 @@ async function runRetry(date, qs){ date=String(date).slice(0,10);
   ctx=ctx||new (window.AudioContext||window.webkitAudioContext)(); await Promise.race([ctx.resume(), new Promise(r=>setTimeout(r,1500))]);
   if(!await openMic()){ show('마이크를 허용해 주세요.'); return end(); }
   try{ wakeLock=await Promise.race([navigator.wakeLock.request('screen'), new Promise(r=>setTimeout(()=>r(null),1500))]); }catch(e){}
-  try{ for(let i=0;i<qs.length && !stopFlag;i++){ show(`<div class="dirs">🔁 재도전 ${i+1}/${qs.length} · <b>Q${qs[i]}</b><br><span class="sub">📝 답안지의 고칠 점 하나만 생각하고, 내 말로.</span></div>`); await say('Retry. Question '+qs[i]+'.'); await new Promise(r=>setTimeout(r,1200)); if(stopFlag) break; await runOne(qs[i]); } }
+  qs=[...new Set(qs)].sort((a,b)=>a-b); // 파트별로 묶어서 실제 시험 순서대로
+  const PN=q=>q<=2?1:q<=4?2:q<=7?3:q<=10?4:5; RETRY=true;
+  try{ let cur=0; for(let i=0;i<qs.length && !stopFlag;i++){ const p=PN(qs[i]);
+      if(p!==cur){ cur=p; const inP=qs.filter(x=>PN(x)===p); show(`<div class="dirs">🔁 재도전 · <b>Part ${p}</b> (${inP.map(x=>'Q'+x).join(', ')})<br><span class="sub">📝 답안지의 고칠 점 하나만 생각하고, 내 말로.</span></div>`); await say('Retry. Part '+p+'.'); await new Promise(r=>setTimeout(r,1200)); if(stopFlag) break; }
+      await runOne(qs[i]); } }
   catch(e){ show('오류: '+e.message); }
-  end(!stopFlag); dOff=0; renderDay();
+  RETRY=false; end(!stopFlag); dOff=0; renderDay();
 }
 async function run(part,q){
   if(running) return; running=true; stopFlag=false; $('stopBtn').classList.remove('hide');
@@ -637,7 +655,7 @@ function renderFB(){
   const f=F[sel.value||dates[0]];
   const curDate=sel.value||dates[0]; const rq=((f.retry||'').match(/\d+/g)||[]).map(Number).filter(n=>n>=1&&n<=11);
   let h=scoreChart(F)+`<div class="card"><b>총점 추정:</b> ${esc(f.total)}<br><b>가장 급한 약점:</b> ${esc(f.urgent)}<br><b>재도전 순서:</b> ${esc(f.retry||'')}
-    ${rq.length?`<button class="big" id="retryBtn" style="margin-top:10px;font-size:17px;padding:14px">🔁 재도전 시작 (${rq.map(n=>'Q'+n).join(' → ')})</button><div class="sub" style="margin-top:4px">이 날짜 문제로 순서대로 다시 녹음해요. 사진 문제는 지난번과 같은 사진. 녹음 목록 맨 위에 처음·최근 비교가 생겨요.</div>`:''}</div>`;
+    ${rq.length?`<button class="big" id="retryBtn" style="margin-top:10px;font-size:17px;padding:14px">🔁 재도전 시작 — 파트별로 (${retryLabel(rq)})</button><div class="sub" style="margin-top:4px">이 날짜 문제로 순서대로 다시 녹음해요. 사진 문제는 지난번과 같은 사진. 녹음 목록 맨 위에 처음·최근 비교가 생겨요.</div>`:''}</div>`;
   const pr=promptsFor(sel.value||dates[0]); const PQ=Object.assign({}, pr.P, f.prompts||{});
   for(let q=1;q<=11;q++){ const x=f.q[q]; if(!x) continue;
     if(q===8) h+=`<div class="card"><div class="fbk" style="margin-top:0">파트4 표 (Q8~10 공통)</div><div style="margin-top:6px">${tableHTML(pr.table)}</div></div>`;
@@ -653,6 +671,7 @@ function renderFB(){
   document.querySelectorAll('#fbBody button.shadow').forEach(b=>b.onclick=()=>shadowScript(decodeURIComponent(b.dataset.t), b.dataset.q));
 }
 // ---------- ⑥ 점수 변화 그래프 (원점수 /35: Q1~2 발음·억양 평균 + Q3~10 + Q11) ----------
+function retryLabel(rq){ const P=q=>q<=2?1:q<=4?2:q<=7?3:q<=10?4:5; const g={}; [...new Set(rq)].sort((a,b)=>a-b).forEach(q=>(g[P(q)]=g[P(q)]||[]).push('Q'+q)); return Object.keys(g).map(p=>`P${p} ${g[p].join('·')}`).join(' → '); }
 function rawScore(f){ let t=0; for(let q=1;q<=11;q++){ const sc=(f.q[q]&&f.q[q].score)||''; const nums=(sc.match(/\d+(?=\s*(?:\/|·|$|\s|\())/g)||sc.match(/\d+/g)||[]).map(Number);
   if(!nums.length) continue; if(q<=2){ const a=(sc.match(/\d+/g)||[]).map(Number).filter(n=>n<=3); t+= a.length? a.reduce((x,y)=>x+y,0)/a.length : 0; } else t+= Math.min(q===11?5:3, nums[0]); } return Math.round(t*10)/10; }
 function scoreChart(F){
