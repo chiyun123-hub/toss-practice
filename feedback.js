@@ -540,5 +540,454 @@ const FEEDBACK = {
    "저는 여덟 살 때 영어를 배우기 시작했어요|여덟 살 때 영어를 배우기 시작했어요"
   ]
  ]
+},
+"2026-11-17": {
+ "title": "02일차 모의고사 (Day 3 세트)",
+ "total": "IM3~IH (약 130~140) 추정 — 원점수 24/35, 어제와 비슷",
+ "urgent": "답이 다시 짧아짐 (Q5 15초 중 9초, Q10 30초 중 15초, Q11 60초 중 34초) → 제이크 틀로 문장 수를 먼저 채우기: Q10 = There are two ~ + First + Second, Q11 = 입장 1 + 이유 1 + 예시 3",
+ "retry": "Q11 → Q10 → Q9 → Q3 → Q7 → Q1 → Q6 → Q5 → Q4 → Q2",
+ "q": {
+  "1": {
+   "score": "발음 2 · 억양 2",
+   "fix": [
+    "nineteen seventies → '1917'로 읽음 (seventies ≠ seventeen)",
+    "room → loom, real → rear (R/L), hall → hole (모음 짧게 ✘ 길게 홀-)",
+    "flash photography를 'flashing'으로 뭉갬, engines 복수 s 빠짐",
+    "후반 1.9초 멈춤 → 의미 단위(/)에서만 쉬기"
+   ],
+   "script": "Welcome to the Hanover Science Museum, ↘ / and thank you for joining today's guided tour. ↘ / We will begin in the space gallery, / where you can see real rocket engines / that were used in the nineteen seventies. ↘ / After that, / we will visit the ocean room, ↗ the dinosaur hall, ↗ and the interactive robot lab. ↘ / Please remember / that flash photography is not allowed / inside the galleries. ↘ / Let's get started. ↘",
+   "words": [
+    "nineteen seventies (1970년대)",
+    "room (R)",
+    "hall (홀-, 길게)",
+    "flash photography (f!)",
+    "engines (복수 s)"
+   ],
+   "grammar": "숫자·고유명사·부정어(not)는 핵심 강세 = 천천히 크게 · 나열 A↗ B↗ and C↘"
+  },
+  "2": {
+   "score": "발음 2 · 억양 2",
+   "fix": [
+    "fifth annual → '50 honor' 로 들림 (th + annual 애뉴얼)",
+    "demonstrations → distractions",
+    "문장 끝이 평평하게 끝나는 곳 많음 (→ 6번)",
+    "어제 Q2보다 빠뜨린 부분 없음 ✅"
+   ],
+   "script": "Thank you all for coming / to the fifth annual Westbrook Food Festival. ↘ / This year, / more than forty local restaurants / are serving dishes from around the world. ↘ / In addition to the food booths, / there will be live music, ↗ cooking demonstrations, ↗ and activities for children. ↘ / Be sure to vote for your favorite dish / before six o'clock. ↘ / The winner will be announced / on the main stage this evening. ↘",
+   "words": [
+    "fifth (f + th)",
+    "annual (애뉴얼)",
+    "demonstrations (데먼스트레이션스)",
+    "announced"
+   ],
+   "grammar": "서수 fifth의 f·th 끝까지 · 마침표 앞은 반드시 ↘"
+  },
+  "3": {
+   "score": "2",
+   "fix": [
+    "장소가 공항 체크인 카운터인데 'bus office' → at an airport check-in counter",
+    "두 사람 모두 'right side'라고 함 → 왼쪽·오른쪽 구분",
+    "blonde woman is wearing a scarf → 사진엔 파란 유니폼(jacket) / 핵심 동작(대화, 모니터 보기)이 빠짐",
+    "30초 중 17초 → 4문장 틀"
+   ],
+   "script": "I think this picture was taken at an airport check-in counter. On the left side of the picture, a woman wearing a blue uniform is smiling and talking to her coworker. On the right, another woman with blond hair is looking at a computer monitor. It seems like they are waiting for passengers.",
+   "words": [
+    "check-in counter",
+    "uniform",
+    "coworker",
+    "monitor",
+    "passenger"
+   ],
+   "grammar": "위치 + 사람 + be ~ing · wearing은 1번, 두 번째 사람은 with blond hair / in a uniform"
+  },
+  "4": {
+   "score": "2",
+   "fix": [
+    "'he also or also he Wearing the glasses' → 동사 빠짐: He is also wearing sunglasses.",
+    "'in the behind of him' → behind him",
+    "장소·인물·동작·배경 다 말함 ✅ (실외라 sunny day OK)"
+   ],
+   "script": "I think this picture was taken outside, in a park. In the middle of the picture, a man wearing a pink shirt is looking at his phone. He is also wearing sunglasses and earphones. Behind him, there are some green trees and a yellow wall. It seems like a sunny summer day.",
+   "words": [
+    "sunglasses",
+    "earphones",
+    "behind him",
+    "outside"
+   ],
+   "grammar": "be동사 + ~ing (he wearing ✘ → he is wearing) · behind + 사람 (in the behind of ✘)"
+  },
+  "5": {
+   "score": "2",
+   "fix": [
+    "두 질문(언제·어디) 다 답함 ✅",
+    "My last trip is 3 years ago → was (과거)",
+    "I did travel in Europe around → I traveled around Europe",
+    "15초 중 9초 → 한 문장 더 (with whom / how long)"
+   ],
+   "script": "The last time I went on a trip was about three years ago, and I traveled around Europe for two weeks.",
+   "words": [
+    "The last time I ~ was",
+    "travel around Europe",
+    "for two weeks"
+   ],
+   "grammar": "질문 단어 그대로: The last time I went on a trip was ~ (제이크 Part3 ②)"
+  },
+  "6": {
+   "score": "2",
+   "fix": [
+    "alone이 'around'로 들림 (L 발음) → 채점관이 질문과 다른 답으로 들을 수 있음",
+    "trip은 명사 → 동사는 travel",
+    "같은 말 반복 (So I prefer to trip around)"
+   ],
+   "script": "I prefer to travel alone, because I can go anywhere I want and change my plans freely.",
+   "words": [
+    "travel alone",
+    "change my plans",
+    "freely"
+   ],
+   "grammar": "I prefer to + 동사원형 (travel) · because + 주어 + 동사"
+  },
+  "7": {
+   "score": "2",
+   "fix": [
+    "price 선택 + 이유(학생이라 돈 없음) ✅",
+    "I don't have many money → much money / a lot of money",
+    "같은 이유 반복, 30초 중 21초 → 추가 문장 so ~ / For example ~"
+   ],
+   "script": "I think price is the most important factor. That's because I'm a student, so I don't have a lot of money. For example, when I traveled around Europe, I stayed in cheap hostels, so I could spend more money on food and tours.",
+   "words": [
+    "the most important factor",
+    "a lot of money",
+    "hostel",
+    "spend money on"
+   ],
+   "grammar": "money는 셀 수 없음 → much / a lot of (many ✘) · That's because ~ + So ~"
+  },
+  "8": {
+   "score": "3 ✅",
+   "fix": [
+    "정보 정확 (M.S., Korea University, 2019)",
+    "His → Her (Sophie Lin)",
+    "Master's course(과정) → master's degree(학위)"
+   ],
+   "script": "Her most recent degree is a master's degree in mechanical engineering from Korea University, and she received it in 2019.",
+   "words": [
+    "master's degree",
+    "receive (received)",
+    "mechanical engineering"
+   ],
+   "grammar": "degree in 전공 from 학교 · 그녀 = her"
+  },
+  "9": {
+   "score": "2",
+   "fix": [
+    "No, actually ~ 정정 시작 ✅",
+    "'she had many experiences to run the exercise experience' 구조 깨짐 → 회사 이름 2개를 바로",
+    "끝이 'and'로 잘림"
+   ],
+   "script": "I'm sorry, but there seems to be a misunderstanding. She has worked at two large companies. She worked at LG Parts from 2019 to 2021, and she has been a senior engineer at Hyundai Robotics since 2021.",
+   "words": [
+    "there seems to be a misunderstanding",
+    "has worked at",
+    "since 2021"
+   ],
+   "grammar": "현재까지 = has been ~ since 2021 · 과거 기간 = worked at ~ from A to B"
+  },
+  "10": {
+   "score": "2",
+   "fix": [
+    "두 경력 모두 말함 ✅",
+    "'she was in energy parts engineering' → She worked as an engineer at LG Parts",
+    "'she was in Hyundai Robotics for senior engineer' → as a senior engineer",
+    "2021이 2012로 들림 (twenty twenty-one) · 30초 중 15초"
+   ],
+   "script": "She has two work experiences. First, she worked as an engineer at LG Parts from 2019 to 2021. Second, since 2021, she has been working as a senior engineer at Hyundai Robotics. She also has skills in AutoCAD and Python.",
+   "words": [
+    "work as a/an ~",
+    "senior engineer",
+    "from A to B",
+    "twenty twenty-one"
+   ],
+   "grammar": "직책은 as a ~, 회사는 at ~ · 연도는 twenty nineteen / twenty twenty-one"
+  },
+  "11": {
+   "score": "3 / 5",
+   "fix": [
+    "입장 분명 ✅ (large company)",
+    "60초 중 34초만 말함 + 2.4초 침묵 → 예시를 3문장 더",
+    "'gave to me many money' → give me a higher salary / 'I can't proud' → I can be proud of",
+    "이유가 '아버지 회사 자랑'(개인 사정) → 일반 이유: better salary, training, stability"
+   ],
+   "script": "I would prefer to work for a large company. That's because large companies usually offer higher salaries and better training programs. So employees can grow their skills faster. For example, my father has worked at a large company for over twenty years. The company paid for his overseas training, and he became an expert in his field. Also, he could support our family without worrying about money. As a result, he is very proud of his job. That's why I want to work for a large company too.",
+   "words": [
+    "offer higher salaries",
+    "training program",
+    "stability",
+    "be proud of",
+    "support my family"
+   ],
+   "grammar": "입장 → That's because (일반 이유) → So ~ → For example (누가·언제·결과) → As a result · ⚠️ 통째 암기 금지"
+  }
+ },
+ "notes": [
+  {
+   "q": 1,
+   "type": "읽기",
+   "said": "used in the 1917 (nineteen seventeen)",
+   "fix": "used in the nineteen seventies",
+   "why": "1970s = nineteen seventies(1970년대). seventeen(17)과 다름 — 숫자는 핵심 강세라 천천히."
+  },
+  {
+   "q": 1,
+   "type": "발음",
+   "said": "ocean room → loom 으로 들림",
+   "fix": "room",
+   "why": "R은 혀끝을 어디에도 대지 않고 살짝 든 상태에서 '(우)룸'. L처럼 혀를 윗잇몸에 대면 loom."
+  },
+  {
+   "q": 1,
+   "type": "발음",
+   "said": "dinosaur hall → hole 로 들림",
+   "fix": "hall",
+   "why": "hall = 입을 크게 '허-ㄹ'(길게). hole은 '호울'."
+  },
+  {
+   "q": 1,
+   "type": "읽기",
+   "said": "Flashing is not allowed",
+   "fix": "flash photography is not allowed",
+   "why": "긴 단어는 천천히 또박또박. photography = 퍼-타-그러-피 (2번째 음절 강세)."
+  },
+  {
+   "q": 2,
+   "type": "발음",
+   "said": "fifth annual → '50 honor' 로 들림",
+   "fix": "fifth annual",
+   "why": "fifth = f + i + f + th, 끝에 혀를 이 사이로. annual = 애-뉴-얼."
+  },
+  {
+   "q": 2,
+   "type": "읽기",
+   "said": "cooking distractions",
+   "fix": "cooking demonstrations",
+   "why": "demonstrations = 데-먼-스트레이-션스. 긴 단어는 속도를 줄여서."
+  },
+  {
+   "q": 3,
+   "type": "내용",
+   "said": "this picture was taken in the bus office",
+   "fix": "This picture was taken at an airport check-in counter.",
+   "why": "장소가 핵심 요소. 공항 카운터·유니폼 같은 단서를 먼저 찾기. 큰 건물·지점은 at."
+  },
+  {
+   "q": 3,
+   "type": "표현",
+   "said": "On the right side… And in the right side of the hall",
+   "fix": "On the left side, … On the right side, …",
+   "why": "두 사람을 같은 위치로 말하면 듣는 사람이 헷갈림. 왼쪽·오른쪽 나눠서."
+  },
+  {
+   "q": 3,
+   "type": "문법",
+   "said": "the woman wearing necklace and they talk to each other",
+   "fix": "The two women are talking to each other.",
+   "why": "문장에 주어+동사가 하나씩. 지금 하는 동작은 are talking (현재진행형)."
+  },
+  {
+   "q": 4,
+   "type": "문법",
+   "said": "also he Wearing the glasses",
+   "fix": "He is also wearing sunglasses.",
+   "why": "be동사 빠짐 → is wearing. also는 be동사 뒤."
+  },
+  {
+   "q": 4,
+   "type": "문법",
+   "said": "in the behind of him, there is a rush tree",
+   "fix": "Behind him, there are some green trees.",
+   "why": "behind는 그 자체가 전치사 → behind him. 나무 여러 그루 = there are trees."
+  },
+  {
+   "q": 5,
+   "type": "문법",
+   "said": "My last trip is 3 years ago",
+   "fix": "My last trip was three years ago.",
+   "why": "ago(~전)는 과거 → was."
+  },
+  {
+   "q": 5,
+   "type": "문법",
+   "said": "I did travel in Europe around",
+   "fix": "I traveled around Europe.",
+   "why": "과거는 traveled (did travel ✘). '유럽 곳곳' = around Europe."
+  },
+  {
+   "q": 6,
+   "type": "표현",
+   "said": "I prefer to trip around because if I trip around…",
+   "fix": "I prefer to travel alone because I can go anywhere I want.",
+   "why": "trip은 명사 → 동사는 travel. alone(얼로운)의 L이 R처럼 나면 around로 들림."
+  },
+  {
+   "q": 7,
+   "type": "문법",
+   "said": "I think most impact factor is price",
+   "fix": "I think price is the most important factor.",
+   "why": "최상급은 the most + 형용사(important). impact는 명사·동사."
+  },
+  {
+   "q": 7,
+   "type": "문법",
+   "said": "I don't have many money",
+   "fix": "I don't have a lot of money.",
+   "why": "money는 셀 수 없는 명사 → much / a lot of."
+  },
+  {
+   "q": 8,
+   "type": "문법",
+   "said": "His degree is Master's course…",
+   "fix": "Her most recent degree is a master's degree…",
+   "why": "Sophie Lin = 여자 → her. course는 '과정', 학위는 degree."
+  },
+  {
+   "q": 9,
+   "type": "문법",
+   "said": "she had many experiences to run the exercise experience",
+   "fix": "She has worked at two large companies.",
+   "why": "질문(대기업 경력 없지?)에 맞춰 바로 정정: has worked at + 회사."
+  },
+  {
+   "q": 10,
+   "type": "표현",
+   "said": "she was in energy parts engineering",
+   "fix": "She worked as an engineer at LG Parts.",
+   "why": "직책 = as a/an, 회사 = at. 표의 글을 '문장'으로 바꿔야 3점."
+  },
+  {
+   "q": 10,
+   "type": "표현",
+   "said": "she was in Hyundai Robotics for senior engineer",
+   "fix": "She has been working as a senior engineer at Hyundai Robotics since 2021.",
+   "why": "지금까지 계속 = has been ~ing since. for(기간) 대신 as(직책)."
+  },
+  {
+   "q": 11,
+   "type": "문법",
+   "said": "the large company gave to me many money",
+   "fix": "Large companies usually offer higher salaries.",
+   "why": "give + 사람 + 물건 (gave to me ✘). 일반적인 이유는 현재형 + 복수 주어."
+  },
+  {
+   "q": 11,
+   "type": "문법",
+   "said": "I can't proud my company",
+   "fix": "I can be proud of my company.",
+   "why": "proud는 형용사 → be proud of. can't(못)는 뜻이 반대."
+  },
+  {
+   "q": 11,
+   "type": "문법",
+   "said": "my father's job is large company",
+   "fix": "My father worked at a large company.",
+   "why": "job이 회사가 아님 → 사람 + worked at + a large company."
+  },
+  {
+   "q": 11,
+   "type": "표현",
+   "said": "it's very popular to my friend",
+   "fix": "My friends were very impressed.",
+   "why": "'친구들이 대단하다고 했다' = were impressed. popular to ✘."
+  }
+ ],
+ "words": [
+  [
+   "nineteen seventies",
+   "1970년대"
+  ],
+  [
+   "guided tour",
+   "가이드 투어|안내 투어"
+  ],
+  [
+   "flash photography",
+   "플래시 촬영"
+  ],
+  [
+   "annual",
+   "연례의|매년 열리는"
+  ],
+  [
+   "cooking demonstration",
+   "요리 시연"
+  ],
+  [
+   "check-in counter",
+   "체크인 카운터|탑승 수속 카운터"
+  ],
+  [
+   "uniform",
+   "유니폼|제복"
+  ],
+  [
+   "coworker",
+   "동료|직장 동료"
+  ],
+  [
+   "sunglasses",
+   "선글라스"
+  ],
+  [
+   "behind him",
+   "그의 뒤에|그 뒤에"
+  ],
+  [
+   "travel alone",
+   "혼자 여행하다|혼자 여행"
+  ],
+  [
+   "the most important factor",
+   "가장 중요한 요소"
+  ],
+  [
+   "hostel",
+   "호스텔"
+  ],
+  [
+   "master's degree",
+   "석사 학위"
+  ],
+  [
+   "mechanical engineering",
+   "기계공학"
+  ],
+  [
+   "work as a senior engineer",
+   "선임 엔지니어로 일하다|수석 엔지니어로 일하다"
+  ],
+  [
+   "higher salary",
+   "더 높은 연봉|더 많은 월급"
+  ],
+  [
+   "be proud of",
+   "~을 자랑스러워하다|자랑스러워하다"
+  ],
+  [
+   "stability",
+   "안정성|안정"
+  ],
+  [
+   "The last time I went on a trip was three years ago.",
+   "마지막으로 여행 간 건 3년 전이에요|마지막 여행은 3년 전이었어요"
+  ],
+  [
+   "She has worked at two large companies.",
+   "그녀는 대기업 두 곳에서 일했어요|그녀는 대기업 두 군데에서 일한 적 있어요"
+  ],
+  [
+   "I don't have a lot of money.",
+   "저는 돈이 많지 않아요|돈이 많지 않아요"
+  ]
+ ]
 }
 };
