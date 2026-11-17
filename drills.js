@@ -130,7 +130,7 @@ function renderDrills(){ const b=$('drillBody'); if(!b) return;
   ({t2s:drillT2S, num:drillNum, pair:drillPair, idea:drillIdea})[dMode](); }
 const srWarn=()=> (window.SpeechRecognition||window.webkitSpeechRecognition)? '' : '<div class="card bad">이 브라우저는 음성인식이 안 돼요 → 크롬에서 열어 주세요.</div>';
 function t2sPick(){ const tab=(typeof P4_DAYS!=='undefined' && P4_DAYS[dayN()])? P4_DAYS[dayN()].t : null; const pool=T2S.filter(x=>x.t!==tab); return pool[Math.floor(Math.random()*pool.length)]; }
-function t2sFrame(m){ const keep=/^(I'm|I|Unfortunately|First|Second|That|There|The|At|On|He|She|You|Lunch|Q&A)$/; return m.replace(/\b(\d[\d:.]*(?:st|nd|rd|th)?|[A-Z][A-Za-z&'.]*)/g,w=> keep.test(w)?w:'___').replace(/(___[\s,]*){2,}/g,'___ ').replace(/___ (?=[.,])/g,'___'); }
+function t2sFrame(m){ const keep=/^(I'm|I|Unfortunately|First|Second|That|There|The|At|On|He|She|You|Lunch|Q&A)$/; return m.replace(/\b(\d[\d:.]*(?:st|nd|rd|th)?|[A-Z][A-Za-z0-9&'.]*)/g,w=> keep.test(w)?w:'___').replace(/(___[\s,]*){2,}/g,'___ ').replace(/___ (?=[.,])/g,'___'); }
 let t2sCur=null, t2sStat={n:0,ok:0}, t2sHelp=(typeof localStorage==='undefined')||!localStorage.getItem('t2sSeen');
 function t2sMark(x){ const doc=$('t2sDoc'); if(!doc) return; const tk=t=>new Set((t.toLowerCase().replace(/<[^>]+>/g,' ').match(/[a-z0-9:$]+/g)||[]));
   const want=tk(x.row); let best=null, bs=0;
