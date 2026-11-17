@@ -64,6 +64,7 @@ button.say{padding:3px 8px;font-size:14px;margin-left:4px;background:#24364d;bor
 .ntag{position:absolute;right:10px;top:10px;font-size:11px;background:#3b2a4a;color:#e9d5ff;border-radius:999px;padding:1px 8px} .ntag.pr{background:#4a3412;color:#fde68a} .ntag.ex{background:#12384a;color:#bae6fd}
 .pseg{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap} .pseg button{flex:1;min-width:70px;padding:9px 4px;font-size:14px} .pseg button.on{background:var(--acc);color:#fff}
 .cnt{display:inline-block;background:var(--bad);color:#fff;border-radius:999px;font-size:11px;padding:0 6px;margin-left:2px}
+.scaf{margin-top:10px;background:#111a24;border:1px dashed #4f9cf9;border-radius:10px;padding:8px 10px} .scaf .sl{padding:3px 6px;border-radius:6px;line-height:1.5;color:#cbd5e1} .scaf .sl.now{background:#1e3a5f;color:#fff;font-weight:700} .scaf .sl.done{color:#64748b;text-decoration:line-through}
 .jk{border:1px solid #f59e0b} .jk details{margin-top:6px} .jk summary{cursor:pointer;font-weight:600;padding:4px 0} .mine{background:#1f1a0b;border-left:3px solid #f59e0b;padding:6px 10px;border-radius:6px;margin-top:6px;line-height:1.5} .weak{border:1px solid #7f1d1d} .wk{border-top:1px solid #2a3340;padding:7px 0;line-height:1.5} .wk s{color:#fca5a5}
 .gd.star{border:1px solid var(--warn)} .ftag{float:right;font-size:11px;background:#4a3412;color:#fde68a;border-radius:999px;padding:1px 8px}
 .gd ul{margin:6px 0;padding-left:18px} .gd li{margin:3px 0;line-height:1.5} .gex{background:#0f1720;border-left:3px solid var(--ok);padding:6px 10px;border-radius:6px;margin-top:6px;line-height:1.5}
@@ -85,7 +86,7 @@ button.say{padding:3px 8px;font-size:14px;margin-left:4px;background:#24364d;bor
   <div class="row"><a href="./">← 따라읽기·표현 앱으로</a></div>
   <h1>실전 연습 & 자료 모음</h1>
   <div class="sub">실제 시험과 같은 준비·답변 시간으로 연습하고, 녹음을 Claude 대화에 바로 공유하세요.</div>
-  <div class="tabs"><button id="tabP" class="on">⏱ 실전</button><button id="tabA">📝 답안지</button><button id="tabN">❌ 오답노트</button><button id="tabG">📘 파트별</button><button id="tabR">📚 자료</button></div>
+  <div class="tabs"><button id="tabP" class="on">⏱ 실전</button><button id="tabA">📝 답안지</button><button id="tabN">❌ 오답노트</button><button id="tabG">📘 파트별</button><button id="tabD">🧩 연습</button><button id="tabR">📚 자료</button></div>
 
   <!-- PRACTICE -->
   <section id="secP">
@@ -101,6 +102,7 @@ button.say{padding:3px 8px;font-size:14px;margin-left:4px;background:#24364d;bor
           <div class="pg"><button class="ph" data-part="4">파트4<br>표 보고 답<small>파트 전체 ▶</small></button><div class="qs"><button data-q="8">8</button><button data-q="9">9</button><button data-q="10">10</button></div></div>
           <div class="pg"><button class="ph" data-part="5">파트5<br>의견 제시<small>파트 전체 ▶</small></button><div class="qs"><button data-q="11">11</button></div></div>
         </div>
+        <div id="scafCtl" class="sub" style="margin-top:8px"></div>
         <button data-part="all" style="width:100%;margin-top:10px;background:#3b2a4a">🎯 모의고사 1~11번 전체 (시작하면 끝까지 자동 · 약 20분)</button>
       </div>
     </div>
@@ -127,6 +129,7 @@ button.say{padding:3px 8px;font-size:14px;margin-left:4px;background:#24364d;bor
   </section>
   <section id="secN" class="hide"><div class="card sub">내가 실제로 말한 문장 → 왜 틀렸는지 → 고친 문장. 🔊 보통 속도 · 🐢 천천히. 고친 문장을 듣고 <b>따라 말하기</b>까지 하세요.</div><div id="noteBody"></div></section>
   <section id="secG" class="hide"><div class="pseg" id="pseg"><button data-g="1">파트1 읽기</button><button data-g="2">파트2 사진</button><button data-g="3">파트3 질문</button><button data-g="4">파트4 표</button><button data-g="5">파트5 의견</button></div><div id="guideBody"></div></section>
+  <section id="secD" class="hide"><div id="drillBody"></div></section>
   <section id="secR" class="hide">
     <div class="card" style="border:1px solid #f59e0b">
       <h2>🎓 제이크 2026 핵심정리 — 파트별 푸는 법</h2>
@@ -235,9 +238,10 @@ button.say{padding:3px 8px;font-size:14px;margin-left:4px;background:#24364d;bor
 <script src="feedback.js?v=43"></script>
 <script src="grammar.js?v=32"></script>
 <script src="jake.js?v=42"></script>
+<script src="drills.js?v=46"></script>
 <script>
 const $=id=>document.getElementById(id);
-const EXAM_VER=45;
+const EXAM_VER=46;
 (function(){ try{ fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{
   if(j && j.v>EXAM_VER && sessionStorage.getItem('examReloadedFor')!==String(j.v) && !running){
     sessionStorage.setItem('examReloadedFor',String(j.v)); location.replace(location.pathname+'?r='+Date.now()+location.hash); } }).catch(()=>{}); }catch(e){} })();
@@ -250,9 +254,9 @@ function setOf(idx){ idx=Math.max(0,idx); if(idx<=12) return idx; if(idx===13) r
 function dayN(){ return setOf(dayIdx()); }
 function renderDay(){ const i=dayIdx(); const dn=Math.max(0,i)+1; const ex={14:' · 🎯 1차 시험일',22:' · 🎯 2차 시험일'}[dn]||''; const left=[[14,'1차'],[22,'2차']].filter(x=>x[0]>dn).map(x=>x[1]+' D-'+(x[0]-dn)).join(' · '); $('dLabel').textContent= 'Day '+dn+ex+(i<0?' (미리보기)':'')+(dOff===0?' · 오늘':'')+(left?'  ('+left+')':''); }
 $('dPrev').onclick=()=>{ if(!running){dOff--;renderDay();} }; $('dNext').onclick=()=>{ if(!running){dOff++;renderDay();} };
-function showTab(k){ ['P','A','N','G','R'].forEach(x=>{ $('sec'+x).classList.toggle('hide',x!==k); $('tab'+x).classList.toggle('on',x===k); }); if(k==='A') renderFB(); if(k==='N') renderNotes(); if(k==='G') renderGuide(); }
-$('tabP').onclick=()=>showTab('P'); $('tabA').onclick=()=>showTab('A'); $('tabR').onclick=()=>showTab('R'); $('tabN').onclick=()=>showTab('N'); $('tabG').onclick=()=>showTab('G');
-if(location.hash==='#resources') showTab('R'); if(location.hash==='#answers') setTimeout(()=>showTab('A'),0); if(location.hash==='#notes') setTimeout(()=>showTab('N'),0); if(/^#part[1-5]?$/.test(location.hash)){ const m=location.hash.match(/\d/); setTimeout(()=>{ if(m) gPart=+m[0]; showTab('G'); },0); }
+function showTab(k){ ['P','A','N','G','D','R'].forEach(x=>{ $('sec'+x).classList.toggle('hide',x!==k); $('tab'+x).classList.toggle('on',x===k); }); if(k==='A') renderFB(); if(k==='N') renderNotes(); if(k==='G') renderGuide(); if(k==='D' && typeof renderDrills==='function') renderDrills(); }
+$('tabP').onclick=()=>showTab('P'); $('tabA').onclick=()=>showTab('A'); $('tabR').onclick=()=>showTab('R'); $('tabN').onclick=()=>showTab('N'); $('tabG').onclick=()=>showTab('G'); $('tabD').onclick=()=>showTab('D');
+if(location.hash==='#resources') showTab('R'); if(location.hash==='#drills') setTimeout(()=>showTab('D'),0); if(location.hash==='#answers') setTimeout(()=>showTab('A'),0); if(location.hash==='#notes') setTimeout(()=>showTab('N'),0); if(/^#part[1-5]?$/.test(location.hash)){ const m=location.hash.match(/\d/); setTimeout(()=>{ if(m) gPart=+m[0]; showTab('G'); },0); }
 
 // ---------- audio helpers ----------
 let voices=[]; function lv(){ voices=speechSynthesis.getVoices(); } lv(); speechSynthesis.onvoiceschanged=lv;
@@ -270,7 +274,7 @@ async function respond(sec,label,cue='Begin speaking now.'){
   await beep();
   const mime=MediaRecorder.isTypeSupported('audio/webm;codecs=opus')?'audio/webm;codecs=opus':(MediaRecorder.isTypeSupported('audio/mp4')?'audio/mp4':'');
   const mr=new MediaRecorder(stream, mime?{mimeType:mime}:{}); const chunks=[]; mr.ondataavailable=e=>{ if(e.data.size) chunks.push(e.data); };
-  mr.start(); await countdown(sec,'RESPONSE TIME · 녹음 중','resp'); mr.stop();
+  mr.start(); if(typeof scafRun==='function') scafRun(sec); await countdown(sec,'RESPONSE TIME · 녹음 중','resp'); mr.stop(); if(typeof scafStop==='function') scafStop();
   await new Promise(r=>mr.onstop=r);
   const ext=(mr.mimeType||'').includes('mp4')?'m4a':'webm';
   const blob=new Blob(chunks,{type:mr.mimeType||'audio/webm'});
@@ -424,7 +428,7 @@ async function shareFiles(list){
 $('shareAll').onclick=()=>shareFiles(recs);
 $('saveAll').onclick=async()=>{ if(!IS_MOBILE) return saveFiles(recs); const files=await prepFiles(recs); downloadAll(files.map(f=>({name:f.name,blob:f}))); $('shareMsg').innerHTML='다운로드 폴더에 저장했어요 → Claude 대화의 <b>+ → 파일 → 다운로드</b>에서 올려 주세요.'; };
 $('clearRecs').onclick=()=>{ if(running) return; recs=[]; prepared=null; saveRecs(); renderRecs(); $('shareMsg').textContent='녹음 목록을 비웠어요.'; };
-function show(html){ $('stage').innerHTML=html; $('stage').classList.remove('sub'); }
+function show(html){ $('stage').innerHTML=html; $('stage').classList.remove('sub'); if(typeof scafAttach==='function') scafAttach(html); }
 
 // ---------- parts ----------
 // ---------- 실제 시험 진행 도우미 ----------
@@ -570,7 +574,7 @@ async function runRetry(date, qs){ date=String(date).slice(0,10);
       // 한 파트를 한 번에: 파트3 상황 설명·파트4 표 읽기와 전화 인사는 한 번만, 실제 시험 순서대로
       if(p===1) await part1(inP); else if(p===2) await part2(inP); else if(p===3) await part3(inP); else if(p===4) await part4(inP); else await part5(0); } }
   catch(e){ show('오류: '+e.message); }
-  RETRY=false; end(!stopFlag); dOff=0; renderDay();
+  const dn=dayNo(); RETRY=false; end(!stopFlag); dOff=0; renderDay(); if(!stopFlag && typeof retrySummary==='function') retrySummary(date,qs,dn);
 }
 async function run(part,q){
   if(running) return; running=true; stopFlag=false; $('stopBtn').classList.remove('hide');
@@ -727,5 +731,6 @@ setTimeout(()=>{ try{ const v=speechSynthesis.getVoices(); if(v.some(x=>/^en/i.t
   d.innerHTML='⚠️ 이 브라우저에 <b>영어 음성</b>이 없어서 영어 문제가 이상하게 읽힐 수 있어요.<br>· <b>크롬이나 엣지</b>로 이 주소를 열어 주세요 (구글/마이크로소프트 영어 음성이 들어 있어요)<br>· 또는 Windows <b>설정 → 시간 및 언어 → 음성 → 음성 추가</b>에서 영어(미국)를 추가하세요';
   document.body.insertBefore(d, document.body.firstChild); }catch(e){} }, 2500);
 </script>
+<script>try{ bindScafCtl("scafCtl"); }catch(e){}</script>
 </body>
 </html>

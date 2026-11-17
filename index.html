@@ -44,11 +44,12 @@ details summary{color:var(--mut);font-size:14px;cursor:pointer}
 <div id="tapAll">화면 아무 곳이나<br>한 번 눌러 주세요<small>휴대폰이 자동 소리 재생을 막았어요</small></div>
 <main>
   <h1>치윤 쉐도잉 · 토스 파트1</h1>
-  <div class="sub">버전 45 · 시작을 누른 뒤에는 화면을 보지 않아도 소리로만 진행돼요.</div>
+  <div class="sub">버전 46 · 시작을 누른 뒤에는 화면을 보지 않아도 소리로만 진행돼요.</div>
 
   <div class="row" style="margin-bottom:10px">
     <button id="modeB" style="flex:2">🚗 출퇴근 표현</button>
     <button id="modeA" style="flex:1">📖 지문 읽기</button>
+    <button id="modeC" style="flex:1">👂 발음 짝</button>
   </div>
   <div class="card">
     <div class="row">
@@ -102,7 +103,7 @@ details summary{color:var(--mut);font-size:14px;cursor:pointer}
 지문 읽기: 영어로 <b>"next"</b> 다음 문장, <b>"stop"</b> 종료.</div>
 </main>
 <script>
-const APP_VER=45;
+const APP_VER=46;
 (function(){
   try{
     fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{
@@ -151,8 +152,8 @@ function todaysPassages(){
 }
 function renderDay(){
   const d=seoulToday(); d.setDate(d.getDate()+dayOffset);
-  $('dayLabel').textContent=(dayOffset===0?'오늘 ':'')+(d.getMonth()+1)+'월 '+d.getDate()+'일 '+(mode==='vocab'?'표현':'지문');
-  if(mode==='vocab') renderVocab(); else renderPassages();
+  $('dayLabel').textContent=(dayOffset===0?'오늘 ':'')+(d.getMonth()+1)+'월 '+d.getDate()+'일 '+(mode==='vocab'?'표현':mode==='pairs'?'발음 짝':'지문');
+  if(mode==='vocab') renderVocab(); else if(mode==='pairs') renderPairs(); else renderPassages();
 }
 function renderPassages(active){
   const ps=todaysPassages();
@@ -330,9 +331,9 @@ async function listen(){
 // ---------- mode ----------
 let mode = 'vocab'; // 출근·퇴근 모두 표현 드릴 (지문 읽기는 버튼으로 선택)
 function setMode(m){ if(running) return; mode=m;
-  $('modeA').style.background= m==='shadow'?'var(--acc)':''; $('modeB').style.background= m==='vocab'?'var(--acc)':'';
+  $('modeA').style.background= m==='shadow'?'var(--acc)':''; $('modeB').style.background= m==='vocab'?'var(--acc)':''; $('modeC').style.background= m==='pairs'?'var(--acc)':'';
   renderDay(); }
-$('modeA').onclick=()=>setMode('shadow'); $('modeB').onclick=()=>setMode('vocab');
+$('modeA').onclick=()=>setMode('shadow'); $('modeB').onclick=()=>setMode('vocab'); $('modeC').onclick=()=>setMode('pairs');
 // 오늘 표현 30개 + @ (가장 최근 모의고사 답안지의 암기 단어)
 function fbExtras(){ try{ if(typeof FEEDBACK==='undefined') return {date:null,items:[]}; const d=seoulToday(); d.setDate(d.getDate()+dayOffset);
   const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
@@ -423,6 +424,37 @@ async function quiz(i,dir,label){
   if(g.ok){ $('fb').innerHTML='<span class="ok">✔ 좋아요</span>'; await say('좋아요'); return 'ok'; }
   $('fb').innerHTML='<span class="bad">✘ 정답: '+en+'</span>'+(g.miss.length&&ans?'<br>빠진/틀린 말: '+g.miss.join(' '):'');
   await say('정답은'); await say(en,'en',0.75); return 'wrong';
+}
+// ---------- 👂 발음 짝 (치윤님이 모의고사에서 실제로 헷갈린 L/R·F·th·숫자) — 소리로만, 운전 중 OK ----------
+const IDX_PAIRS=[['room','loom'],['hall','hole'],['alone','around'],['large','rod'],['learn','run'],['real','rear'],['forty','fourteen'],['fifth','fist'],['thirty','story'],['flash','plash'],['light','right'],['lead','read'],['fly','fry'],['play','pray'],['work','walk'],['fee','pea'],['file','pile'],['collect','correct']];
+function renderPairs(){ $('passageBox').innerHTML='<div class="ptype">발음 짝 '+IDX_PAIRS.length+'개 · ① 듣고 몇 번인지 말하기(일/이) ② 첫 단어 따라 말하기 · 틀린 짝은 다시</div><div class="ptext">'+IDX_PAIRS.map((p,i)=>`<div style="padding:2px 4px">${i+1}. ${p[0]} ↔ <span style="color:#94a3b8">${p[1]}</span></div>`).join('')+'</div>'; }
+function pickNum(t){ const x=(t||'').replace(/\s/g,'').toLowerCase(); if(/^(1|일|일번|원|하나|one|첫번째|첫번|1번)/.test(x)) return 0; if(/^(2|이|이번|투|둘|two|두번째|두번|2번|to|too)/.test(x)) return 1; return -1; }
+async function pairOnce(p,label){
+  const [a,b]=p; $('status').textContent=label; $('fb').innerHTML=''; $('passageBox').innerHTML=`<div class="ptype">${label}</div><div class="ptext" style="font-size:24px">1. ${a}<br>2. ${b}</div>`;
+  await say('1번'); await say(a,'en',0.8); await say('2번'); await say(b,'en',0.8); if(stopFlag) return 'stop';
+  const k=Math.random()<.5?0:1; await say('어느 쪽일까요');
+  const ans=await askItem(p[k],'en','ko-KR','일번'); if(stopFlag) return 'stop'; if(isCmd(ans,['그만','stop'])){ stopFlag=true; return 'stop'; }
+  const g=pickNum(ans); let ok1=g===k;
+  if(ok1){ $('fb').innerHTML='<span class="ok">✔ 듣기 맞아요</span>'; await say('맞아요'); } else { $('fb').innerHTML='<span class="bad">✘ '+(k+1)+'번 '+p[k]+'</span>'; await say((k+1)+'번이에요'); await say(p[k],'en',0.75); }
+  await say('이제 1번을 따라 말하세요');
+  let ok2=false;
+  for(let t=0;t<2 && !stopFlag && !ok2;t++){
+    const said=await askItem(a,'en','en-US',a); if(stopFlag) return 'stop'; if(said==='__skip__') break;
+    const w=(said||'').toLowerCase().replace(/[^a-z ]/g,' ').split(/\s+/); ok2= w.includes(a.split(' ')[0]) && !w.includes(b.split(' ')[0]);
+    if(ok2){ $('fb').innerHTML+='<br><span class="ok">✔ '+a+'로 들렸어요</span>'; await say('좋아요'); }
+    else { $('fb').innerHTML+='<br><span class="bad">✘ 「'+(said||'못 들음')+'」로 들렸어요</span>'; if(t===0) await say('한 번 더'); }
+  }
+  return ok1&&ok2?'ok':'wrong';
+}
+async function runPairs(){
+  let list=IDX_PAIRS.slice().sort(()=>Math.random()-.5).slice(0,10), round=1, okAll=0;
+  while(list.length && round<=3 && !stopFlag){
+    const wrong=[];
+    for(let i=0;i<list.length && !stopFlag;i++){ const r=await pairOnce(list[i],`발음 짝 ${round}라운드 ${i+1}/${list.length}`); if(r==='stop') break; if(r==='ok') okAll++; else wrong.push(list[i]); }
+    if(stopFlag) break; addLog(`<span class="pill">발음 짝 ${round}라운드</span>${list.length-wrong.length}/${list.length} 통과`+(wrong.length?' · 다시: '+wrong.map(p=>p[0]).join(', '):''));
+    list=wrong; round++; if(list.length && !stopFlag) await say('틀린 짝만 다시 할게요');
+  }
+  if(!stopFlag) await say('발음 짝 끝났어요. 수고했어요');
 }
 const REVIEW_ROUNDS=5;
 async function runVocab(){
@@ -530,6 +562,7 @@ async function run(){
   audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)(); await audioCtx.resume();
   try{ wakeLock=await Promise.race([navigator.wakeLock.request('screen'), new Promise(r=>setTimeout(()=>r(null),1500))]); }catch(e){}
   if(mode==='vocab'){ if(!SR){ await say('크롬으로 열어 주세요'); return finish(); } await runVocab(); return finish(); }
+  if(mode==='pairs'){ if(!SR){ await say('크롬으로 열어 주세요'); return finish(); } await runPairs(); return finish(); }
   if(window.asrState==='loading'){ $('status').textContent='음성인식 모델 준비 중…'; await say('음성인식 준비 중이에요. 잠시만요');
     const w0=performance.now(); while(window.asrState==='loading' && performance.now()-w0<180000 && !stopFlag) await new Promise(r=>setTimeout(r,500)); }
   if(!asrReady() && !SR){ await say('이 브라우저는 음성 인식을 지원하지 않아요. 크롬으로 열어 주세요'); return finish(); }
