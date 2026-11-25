@@ -241,7 +241,7 @@ button.say{padding:3px 8px;font-size:14px;margin-left:4px;background:#24364d;bor
 <script src="drills.js?v=48"></script>
 <script>
 const $=id=>document.getElementById(id);
-const EXAM_VER=49;
+const EXAM_VER=50;
 (function(){ try{ fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{
   if(j && j.v>EXAM_VER && sessionStorage.getItem('examReloadedFor')!==String(j.v) && !running){
     sessionStorage.setItem('examReloadedFor',String(j.v)); location.replace(location.pathname+'?r='+Date.now()+location.hash); } }).catch(()=>{}); }catch(e){} })();
@@ -262,8 +262,21 @@ if(location.hash==='#resources') showTab('R'); if(location.hash==='#drills') set
 let voices=[]; function lv(){ voices=speechSynthesis.getVoices(); } lv(); speechSynthesis.onvoiceschanged=lv;
 function say(t,lang='en'){ return new Promise(r=>{ if(stopFlag) return r(); const u=new SpeechSynthesisUtterance(t);
   u.lang=lang==='en'?'en-US':'ko-KR'; const v=voices.filter(v=>v.lang&&v.lang.replace('_','-').toLowerCase().startsWith(lang==='en'?'en-us':'ko')); const g=v.find(x=>/google/i.test(x.name))||v[0]; if(g)u.voice=g;
-  u.rate=lang==='en'?0.95:1.05; let done=false; const f=()=>{if(!done){done=true;r();}}; u.onend=f; u.onerror=f; setTimeout(f,3000+t.length*120); speechSynthesis.speak(u); }); }
-function beep(f=880,d=0.25){ try{ const o=ctx.createOscillator(),g=ctx.createGain(); o.frequency.value=f; g.gain.value=0.2; o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime+d);}catch(e){} return new Promise(r=>setTimeout(r,d*1000+80)); }
+  u.rate=lang==='en'?0.95:1.05; let done=false, started=false; const f=()=>{if(!done){done=true;r();}};
+  u.onstart=()=>{ started=true; ttsFail=0; ttsWarn(false); }; u.onend=f; u.onerror=f; setTimeout(f,3000+t.length*120);
+  /* 음성이 멈춰 있으면(크롬 버그) 한 번 비우고 말하기 */
+  if(speechSynthesis.paused) speechSynthesis.resume(); if(speechSynthesis.speaking||speechSynthesis.pending) speechSynthesis.cancel();
+  speechSynthesis.speak(u);
+  /* 2.5초 안에 소리가 시작 안 되면 기다리지 말고 넘어가기 + 경고 (랙처럼 느려지는 것 방지) */
+  setTimeout(()=>{ if(!started&&!done){ ttsFail++; if(ttsFail>=2) ttsWarn(true); speechSynthesis.cancel(); f(); } },2500); }); }
+let ttsFail=0;
+function ttsWarn(on){ let b=document.getElementById('ttsWarn');
+  if(!on){ if(b) b.remove(); return; } if(b) return;
+  b=document.createElement('div'); b.id='ttsWarn';
+  b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9999;background:#b91c1c;color:#fff;padding:12px;font-size:16px;text-align:center';
+  b.innerHTML='🔇 문제 읽는 소리가 안 나고 있어요<br><small>블루투스(차·이어폰) 끄기 → 미디어 볼륨 확인 → 앱 껐다 켜기</small>';
+  document.body.appendChild(b); }
+function beep(f=880,d=0.25){ try{ if(ctx&&ctx.state!=='running') ctx.resume(); const o=ctx.createOscillator(),g=ctx.createGain(); o.frequency.value=f; g.gain.value=0.2; o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime+d);}catch(e){} return new Promise(r=>setTimeout(r,d*1000+80)); }
 function countdown(sec,label,cls){ return new Promise(r=>{ $('phase').textContent=label; $('phase').className=cls; let t=sec; $('timer').textContent=fmt(t);
   const iv=setInterval(()=>{ if(stopFlag){clearInterval(iv);return r();} t--; $('timer').textContent=fmt(Math.max(t,0)); if(t<=0){clearInterval(iv); r();} },1000); }); }
 function fmt(s){ return '00:'+String(s).padStart(2,'0'); }
